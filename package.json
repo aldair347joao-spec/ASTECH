@@ -1,0 +1,13 @@
+{
+  "name": "vfs-bot",
+  "version": "1.0.0",
+  "description": "Bot de automacao para agendamento VFS",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "2captcha": "^3.1.1",
+    "puppeteer": "^22.0.0"
+  }
+}
