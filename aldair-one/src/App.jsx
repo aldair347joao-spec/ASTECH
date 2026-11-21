@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import {
   ArrowRight,
@@ -19,8 +20,12 @@ import {
   Layers3,
   ShieldCheck,
   Zap,
-  ChevronRight
+  ChevronRight,
+  LogIn,
+  UserRound
 } from "lucide-react";
+
+import AuthModal from "./components/AuthModal";
 
 const services = [
   {
@@ -92,6 +97,8 @@ const technologies = [
 
 function App() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [user, setUser] = useState(null);
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -103,6 +110,11 @@ function App() {
     ["Academia", "#academia"],
     ["Contacto", "#contacto"]
   ];
+
+  function handleAuthenticated(authenticatedUser) {
+    setUser(authenticatedUser);
+    setAuthOpen(false);
+  }
 
   return (
     <div className="app">
@@ -129,6 +141,7 @@ function App() {
               {label}
             </a>
           ))}
+
           <a
             href="#contacto"
             className="nav-cta"
@@ -136,6 +149,32 @@ function App() {
           >
             Vamos conversar <ArrowUpRight size={15} />
           </a>
+
+          <button
+            type="button"
+            className="nav-cta"
+            onClick={() => {
+              closeMenu();
+              setAuthOpen(true);
+            }}
+            style={{
+              border: "none",
+              cursor: "pointer",
+              fontFamily: "inherit"
+            }}
+          >
+            {user ? (
+              <>
+                <UserRound size={16} />
+                Minha conta
+              </>
+            ) : (
+              <>
+                <LogIn size={16} />
+                Entrar / Criar conta
+              </>
+            )}
+          </button>
         </nav>
       </header>
 
@@ -397,6 +436,13 @@ function App() {
           Voltar ao topo <ChevronRight size={16} />
         </a>
       </footer>
+
+      {authOpen && (
+        <AuthModal
+          onClose={() => setAuthOpen(false)}
+          onAuthenticated={handleAuthenticated}
+        />
+      )}
     </div>
   );
 }
