@@ -1,0 +1,234 @@
+
+.auth-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(3, 8, 20, 0.82);
+  backdrop-filter: blur(10px);
+  overflow-y: auto;
+}
+
+.auth-modal {
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+  padding: 38px;
+  border: 1px solid rgba(83, 163, 255, 0.2);
+  border-radius: 22px;
+  background: #0b1426;
+  color: #f4f7ff;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.45);
+  animation: authAppear 0.25s ease;
+}
+
+@keyframes authAppear {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.auth-close {
+  position: absolute;
+  top: 17px;
+  right: 17px;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #aab8d0;
+  cursor: pointer;
+}
+
+.auth-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 30px;
+  color: #f4f7ff;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+}
+
+.auth-brand-mark {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #168cff, #18d5e8);
+  color: #fff;
+  font-size: 19px;
+}
+
+.auth-heading {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.auth-icon {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 16px;
+  border-radius: 15px;
+  background: rgba(24, 160, 255, 0.12);
+  color: #36baff;
+}
+
+.auth-heading h2 {
+  margin: 0 0 9px;
+  color: #fff;
+  font-size: 25px;
+  font-weight: 750;
+}
+
+.auth-heading p {
+  margin: 0;
+  color: #9aaac3;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  padding: 5px;
+  margin-bottom: 23px;
+  border-radius: 12px;
+  background: #111f35;
+}
+
+.auth-tabs button {
+  padding: 11px 8px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #9aabc5;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.auth-tabs button.active {
+  background: #1a8df0;
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(26, 141, 240, 0.2);
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auth-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #d9e3f4;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.auth-form input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 47px;
+  padding: 0 14px;
+  border: 1px solid #263955;
+  border-radius: 10px;
+  outline: none;
+  background: #101d31;
+  color: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.auth-form input::placeholder {
+  color: #71829c;
+}
+
+.auth-form input:focus {
+  border-color: #219bff;
+  box-shadow: 0 0 0 3px rgba(33, 155, 255, 0.12);
+}
+
+.auth-error {
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 91, 91, 0.25);
+  border-radius: 9px;
+  background: rgba(255, 75, 75, 0.09);
+  color: #ff9292;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.auth-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 49px;
+  margin-top: 5px;
+  border: 0;
+  border-radius: 11px;
+  background: linear-gradient(110deg, #168cff, #13bcd6);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.auth-submit:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.auth-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-terms {
+  margin: 24px 0 0;
+  color: #71829c;
+  font-size: 11px;
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .auth-overlay {
+    padding: 12px;
+    align-items: center;
+  }
+
+  .auth-modal {
+    padding: 28px 21px;
+    border-radius: 18px;
+  }
+
+  .auth-heading h2 {
+    font-size: 22px;
+  }
+}
