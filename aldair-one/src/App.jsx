@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -26,6 +26,8 @@ import {
 } from "lucide-react";
 
 import AuthModal from "./components/AuthModal";
+import Dashboard from "./components/Dashboard";
+import { authAPI, getToken } from "./services/api";
 
 const services = [
   {
@@ -99,6 +101,42 @@ function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [user, setUser] = useState(null);
+  const [dashboardOpen, setDashboardOpen] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+
+    async function restoreSession() {
+      if (!getToken()) {
+        if (active) {
+          setCheckingSession(false);
+        }
+        return;
+      }
+
+      try {
+        const response = await authAPI.me();
+
+        if (active && response.success && response.user) {
+          setUser(response.user);
+          setDashboardOpen(true);
+        }
+      } catch (error) {
+        authAPI.logout();
+      } finally {
+        if (active) {
+          setCheckingSession(false);
+        }
+      }
+    }
+
+    restoreSession();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -114,6 +152,43 @@ function App() {
   function handleAuthenticated(authenticatedUser) {
     setUser(authenticatedUser);
     setAuthOpen(false);
+    setDashboardOpen(true);
+  }
+
+  function handleLogout() {
+    authAPI.logout();
+    setUser(null);
+    setDashboardOpen(false);
+    setAuthOpen(false);
+    setMenuOpen(false);
+  }
+
+  if (checkingSession) {
+    return (
+      <div className="app">
+        <div
+          style={{
+            minHeight: "100vh",
+            display: "grid",
+            placeItems: "center",
+            color: "#ffffff",
+            background: "#080f1e",
+            fontSize: "16px"
+          }}
+        >
+          A carregar ALDAIR ONE...
+        </div>
+      </div>
+    );
+  }
+
+  if (user && dashboardOpen) {
+    return (
+      <Dashboard
+        user={user}
+        onLogout={handleLogout}
+      />
+    );
   }
 
   return (
@@ -155,7 +230,12 @@ function App() {
             className="nav-cta"
             onClick={() => {
               closeMenu();
-              setAuthOpen(true);
+
+              if (user) {
+                setDashboardOpen(true);
+              } else {
+                setAuthOpen(true);
+              }
             }}
             style={{
               border: "none",
@@ -202,33 +282,45 @@ function App() {
               <a href="#projetos" className="button button-primary">
                 Explorar projetos <ArrowRight size={18} />
               </a>
+
               <a href="#sobre" className="button button-outline">
                 Conhecer o meu trabalho
               </a>
             </div>
 
             <div className="hero-meta">
-              <span><ShieldCheck size={16} /> Soluções orientadas a resultados</span>
-              <span><Globe size={16} /> Angola · Disponível remotamente</span>
+              <span>
+                <ShieldCheck size={16} />
+                Soluções orientadas a resultados
+              </span>
+
+              <span>
+                <Globe size={16} />
+                Angola · Disponível remotamente
+              </span>
             </div>
           </div>
 
           <div className="hero-visual">
             <div className="orbit orbit-one" />
             <div className="orbit orbit-two" />
+
             <div className="visual-core">
               <span className="core-a">A</span>
               <span className="core-name">ALDAIR ONE</span>
               <span className="core-caption">ONE PLATFORM</span>
             </div>
+
             <div className="floating-card card-top">
               <Bot size={20} />
               <span>Inteligência Artificial</span>
             </div>
+
             <div className="floating-card card-bottom">
               <Code2 size={20} />
               <span>Desenvolvimento</span>
             </div>
+
             <div className="floating-card card-side">
               <Database size={20} />
               <span>Dados & Sistemas</span>
@@ -241,10 +333,12 @@ function App() {
             <strong>01</strong>
             <span>Ecossistema digital</span>
           </div>
+
           <div>
             <strong>04</strong>
             <span>Áreas de atuação</span>
           </div>
+
           <div>
             <strong>∞</strong>
             <span>Possibilidades de inovação</span>
@@ -263,6 +357,7 @@ function App() {
                 Acredito que a tecnologia deve resolver problemas reais,
                 simplificar processos e criar novas oportunidades.
               </p>
+
               <p className="muted">
                 O meu trabalho cruza desenvolvimento de software, automação,
                 plataformas de gestão empresarial, análise de dados e
@@ -270,6 +365,7 @@ function App() {
                 ferramentas úteis, eficientes e adaptadas às necessidades
                 concretas dos negócios.
               </p>
+
               <a href="#contacto" className="text-link">
                 Trabalhar comigo <ArrowUpRight size={17} />
               </a>
@@ -280,12 +376,15 @@ function App() {
               <h3>Aldair João Francisco</h3>
               <p>Desenvolvedor Full Stack</p>
               <div className="profile-line" />
-              <span>Desenvolvimento · Automação · Sistemas empresariais</span>
+              <span>
+                Desenvolvimento · Automação · Sistemas empresariais
+              </span>
             </div>
           </div>
 
           <div className="tech-area">
             <h3>Ferramentas e tecnologias</h3>
+
             <div className="tech-list">
               {technologies.map((tech) => (
                 <span key={tech}>{tech}</span>
@@ -306,15 +405,21 @@ function App() {
           <div className="service-grid">
             {services.map((service, index) => {
               const Icon = service.icon;
+
               return (
                 <article className="service-card" key={service.title}>
                   <div className="service-top">
                     <span>0{index + 1}</span>
                     <Icon size={25} />
                   </div>
+
                   <h3>{service.title}</h3>
                   <p>{service.description}</p>
-                  <a href="#contacto" aria-label={`Consultar ${service.title}`}>
+
+                  <a
+                    href="#contacto"
+                    aria-label={`Consultar ${service.title}`}
+                  >
                     <ArrowUpRight size={20} />
                   </a>
                 </article>
@@ -335,12 +440,20 @@ function App() {
           <div className="project-grid">
             {projects.map((project) => {
               const Icon = project.icon;
+
               return (
                 <article className="project-card" key={project.name}>
-                  <div className="project-icon"><Icon size={27} /></div>
-                  <span className="project-category">{project.category}</span>
+                  <div className="project-icon">
+                    <Icon size={27} />
+                  </div>
+
+                  <span className="project-category">
+                    {project.category}
+                  </span>
+
                   <h3>{project.name}</h3>
                   <p>{project.description}</p>
+
                   <div className="project-footer">
                     <span>{project.status}</span>
                     <ArrowUpRight size={18} />
@@ -355,23 +468,39 @@ function App() {
           <div className="academy-icon">
             <GraduationCap size={35} />
           </div>
+
           <div className="academy-content">
             <span className="section-label">04 — EDUCAÇÃO</span>
             <h2>ALDAIR ONE Academy</h2>
+
             <p>
               Um espaço de aprendizagem prática, onde o conhecimento
               tecnológico se transforma em competências e soluções para
               o mercado de trabalho.
             </p>
+
             <div className="academy-features">
-              <span><Code2 size={16} /> Formação prática</span>
-              <span><Video size={16} /> Aulas online</span>
-              <span><GraduationCap size={16} /> Certificados</span>
+              <span>
+                <Code2 size={16} />
+                Formação prática
+              </span>
+
+              <span>
+                <Video size={16} />
+                Aulas online
+              </span>
+
+              <span>
+                <GraduationCap size={16} />
+                Certificados
+              </span>
             </div>
+
             <a href="#contacto" className="button button-primary">
               Conhecer a Academia <ArrowRight size={18} />
             </a>
           </div>
+
           <div className="academy-decoration">ONE</div>
         </section>
 
@@ -379,20 +508,27 @@ function App() {
           <div className="section-heading">
             <span className="section-label">05 — CONTACTO</span>
             <h2>Vamos criar algo relevante?</h2>
+
             <p className="muted">
               Tens um desafio, uma ideia ou um projeto? Vamos conversar.
             </p>
           </div>
 
           <div className="contact-grid">
-            <a href="mailto:contacto@aldairone.com" className="contact-item">
+            <a
+              href="mailto:contacto@aldairone.com"
+              className="contact-item"
+            >
               <Mail size={22} />
+
               <span>
                 <small>EMAIL</small>
                 <strong>Enviar uma mensagem</strong>
               </span>
+
               <ArrowUpRight />
             </a>
+
             <a
               href="https://github.com/aldair347joao-spec"
               target="_blank"
@@ -400,12 +536,15 @@ function App() {
               className="contact-item"
             >
               <Github size={22} />
+
               <span>
                 <small>GITHUB</small>
                 <strong>Explorar repositórios</strong>
               </span>
+
               <ArrowUpRight />
             </a>
+
             <a
               href="https://www.linkedin.com/"
               target="_blank"
@@ -413,10 +552,12 @@ function App() {
               className="contact-item"
             >
               <Linkedin size={22} />
+
               <span>
                 <small>LINKEDIN</small>
                 <strong>Perfil profissional</strong>
               </span>
+
               <ArrowUpRight />
             </a>
           </div>
@@ -426,12 +567,17 @@ function App() {
       <footer className="footer">
         <a href="#inicio" className="brand footer-brand">
           <span className="brand-mark">A</span>
+
           <span>
             <strong>ALDAIR ONE</strong>
             <small>ONE PLATFORM. MULTIPLE SOLUTIONS.</small>
           </span>
         </a>
-        <p>© {new Date().getFullYear()} ALDAIR ONE. Todos os direitos reservados.</p>
+
+        <p>
+          © {new Date().getFullYear()} ALDAIR ONE. Todos os direitos reservados.
+        </p>
+
         <a href="#inicio" className="back-top">
           Voltar ao topo <ChevronRight size={16} />
         </a>
