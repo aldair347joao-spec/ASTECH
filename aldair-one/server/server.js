@@ -7,6 +7,7 @@ import helmet from "helmet";
 import { connectDatabase } from "./config/database.js";
 import authRoutes from "./routes/auth.js";
 import adminRoutes from "./routes/admin.js";
+import academyRoutes from "./routes/academy.js";
 
 const app = express();
 
@@ -37,7 +38,9 @@ app.use(
         return callback(null, true);
       }
 
-      return callback(new Error("Origem não autorizada pelo CORS."));
+      return callback(
+        new Error("Origem não autorizada pelo CORS.")
+      );
     },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"]
@@ -64,11 +67,16 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+// Autenticação
 app.use("/api/auth", authRoutes);
 
-// Rotas exclusivas do painel administrativo
+// Administração
 app.use("/api/admin", adminRoutes);
 
+// Academia: cursos, turmas, inscrições e aulas online
+app.use("/api/academy", academyRoutes);
+
+// Rota não encontrada
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -76,6 +84,7 @@ app.use((req, res) => {
   });
 });
 
+// Tratamento de erros
 app.use((error, req, res, next) => {
   console.error("Erro no servidor:", error.message);
 
@@ -99,10 +108,16 @@ async function startServer() {
     await connectDatabase();
 
     app.listen(PORT, "0.0.0.0", () => {
-      console.log(`ALDAIR ONE API activa na porta ${PORT}.`);
+      console.log(
+        `ALDAIR ONE API activa na porta ${PORT}.`
+      );
     });
   } catch (error) {
-    console.error("Falha ao iniciar ALDAIR ONE:", error.message);
+    console.error(
+      "Falha ao iniciar ALDAIR ONE:",
+      error.message
+    );
+
     process.exit(1);
   }
 }
