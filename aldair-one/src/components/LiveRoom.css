@@ -1,0 +1,150 @@
+
+.live-room-overlay {
+  position: fixed;
+  z-index: 2000;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: #f8fafc;
+  background: #070d18;
+}
+
+.live-room-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 15px 22px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+  background: #101a2b;
+}
+
+.live-room-header span {
+  color: #60a5fa;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+}
+
+.live-room-header h2 {
+  margin: 5px 0;
+  font-size: 17px;
+}
+
+.live-room-header p {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.live-room-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.live-room-header-actions button,
+.live-room-message button {
+  min-height: 39px;
+  padding: 0 14px;
+  color: white;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 9px;
+  background: #1e293b;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.live-room-header-actions .live-room-end-button {
+  border-color: #991b1b;
+  background: #b91c1c;
+}
+
+.live-room-header-actions .live-room-exit-button {
+  background: #1e40af;
+  border-color: #2563eb;
+}
+
+.live-room-header-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.live-room-content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.live-room-content .lk-video-conference {
+  height: 100%;
+}
+
+.live-room-error {
+  padding: 10px 16px;
+  color: #fecaca;
+  background: #450a0a;
+  font-size: 12px;
+}
+
+.live-room-message {
+  width: min(90%, 420px);
+  margin: auto;
+  padding: 30px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 16px;
+  background: #111c2c;
+  text-align: center;
+}
+
+.live-room-message h2 {
+  color: #fff;
+  font-size: 20px;
+}
+
+.live-room-message p {
+  color: #94a3b8;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.live-room-message button {
+  margin-top: 12px;
+  background: #2563eb;
+}
+
+.live-room-spinner {
+  width: 35px;
+  height: 35px;
+  margin: 0 auto 18px;
+  border: 3px solid rgba(96, 165, 250, 0.2);
+  border-top-color: #60a5fa;
+  border-radius: 50%;
+  animation: liveRoomSpin 0.8s linear infinite;
+}
+
+@keyframes liveRoomSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 650px) {
+  .live-room-header {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 13px;
+  }
+
+  .live-room-header-actions {
+    width: 100%;
+  }
+
+  .live-room-header-actions button {
+    flex: 1;
+    padding: 0 8px;
+    font-size: 11px;
+  }
+}
