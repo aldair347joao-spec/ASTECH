@@ -1,7 +1,7 @@
 
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
-const EnrollmentSchema = new mongoose.Schema(
+const enrollmentSchema = new mongoose.Schema(
   {
     student: {
       type: mongoose.Schema.Types.ObjectId,
@@ -126,9 +126,7 @@ const EnrollmentSchema = new mongoose.Schema(
   }
 );
 
-// Impede inscrições duplicadas do mesmo aluno
-// na mesma turma.
-EnrollmentSchema.index(
+enrollmentSchema.index(
   {
     student: 1,
     class: 1
@@ -139,18 +137,18 @@ EnrollmentSchema.index(
   }
 );
 
-// Facilita consultas por curso e estado.
-EnrollmentSchema.index({
+enrollmentSchema.index({
   course: 1,
   status: 1
 });
 
-// Facilita consultas por aluno e estado.
-EnrollmentSchema.index({
+enrollmentSchema.index({
   student: 1,
   status: 1
 });
 
-module.exports =
+const Enrollment =
   mongoose.models.Enrollment ||
-  mongoose.model("Enrollment", EnrollmentSchema);
+  mongoose.model("Enrollment", enrollmentSchema);
+
+export default Enrollment;
