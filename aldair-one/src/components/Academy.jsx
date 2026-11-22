@@ -22,6 +22,7 @@ import {
 
 import { academyAPI, adminAPI } from "../services/api";
 import StudentProgress from "./StudentProgress";
+import LiveRoom from "./LiveRoom";
 import "./Academy.css";
 
 const ROLE_LABELS = {
@@ -105,6 +106,9 @@ function Academy({ user, initialTab = "courses" }) {
   const [selectedRoster, setSelectedRoster] = useState(null);
   const [rosterLoading, setRosterLoading] = useState(false);
   const [rosterError, setRosterError] = useState("");
+
+  // ESTADO DA VIDEOCONFERÊNCIA LIVEKIT
+  const [selectedSession, setSelectedSession] = useState(null);
 
   const [courseForm, setCourseForm] = useState({
     title: "",
@@ -374,6 +378,7 @@ function Academy({ user, initialTab = "courses" }) {
     );
   }
 
+  // AGENDAR AULA ONLINE
   async function handleCreateSession(event) {
     event.preventDefault();
     setSaving(true);
@@ -410,6 +415,7 @@ function Academy({ user, initialTab = "courses" }) {
     }
   }
 
+  // ABRIR FORMULÁRIOS
   function renderForm() {
     if (!showForm) return null;
 
@@ -773,6 +779,7 @@ function Academy({ user, initialTab = "courses" }) {
     );
   }
 
+  // LISTA DE ALUNOS DA TURMA
   function renderRoster() {
     if (!selectedRoster) return null;
 
@@ -1022,6 +1029,7 @@ function Academy({ user, initialTab = "courses" }) {
         </div>
       ) : (
         <>
+          {/* CURSOS */}
           {activeTab === "courses" && (
             <div className="academy-card-grid">
               {courses.length === 0 ? (
@@ -1072,6 +1080,7 @@ function Academy({ user, initialTab = "courses" }) {
             </div>
           )}
 
+          {/* TURMAS */}
           {activeTab === "classes" && (
             <div className="academy-list">
               {classes.length === 0 ? (
@@ -1155,6 +1164,7 @@ function Academy({ user, initialTab = "courses" }) {
             </div>
           )}
 
+          {/* INSCRIÇÕES */}
           {activeTab === "enrollments" && (
             <div className="academy-list">
               {enrollments.length === 0 ? (
@@ -1228,6 +1238,7 @@ function Academy({ user, initialTab = "courses" }) {
             </div>
           )}
 
+          {/* AULAS ONLINE E VIDEOCONFERÊNCIA */}
           {activeTab === "sessions" && (
             <div className="academy-list">
               {sessions.length === 0 ? (
@@ -1278,11 +1289,28 @@ function Academy({ user, initialTab = "courses" }) {
                       <button
                         className="academy-join-disabled"
                         type="button"
-                        disabled
-                        title="A integração LiveKit ainda está a ser preparada"
+                        disabled={
+                          !(
+                            (canTeach &&
+                              ["scheduled", "live"].includes(session.status)) ||
+                            (isStudent && session.status === "live")
+                          )
+                        }
+                        onClick={() => setSelectedSession(session)}
+                        title={
+                          session.status === "scheduled"
+                            ? "Iniciar esta aula"
+                            : session.status === "live"
+                              ? "Entrar na videoconferência"
+                              : "Esta aula ainda não está disponível"
+                        }
                       >
-                        <Lock size={15} />
-                        Sala em preparação
+                        <Video size={15} />
+                        {canTeach && session.status === "scheduled"
+                          ? "Iniciar aula"
+                          : session.status === "live"
+                            ? "Entrar na sala"
+                            : "Sala indisponível"}
                       </button>
                     </div>
                   </article>
@@ -1296,13 +1324,23 @@ function Academy({ user, initialTab = "courses" }) {
       <div className="academy-security-note">
         <Lock size={16} />
         <span>
-          As inscrições, permissões e futuras salas de videoconferência
+          As inscrições, permissões e salas de videoconferência
           são controladas pelo servidor.
         </span>
       </div>
 
       {renderForm()}
       {renderRoster()}
+
+      {/* SALA DE VIDEOCONFERÊNCIA LIVEKIT */}
+      {selectedSession && (
+        <LiveRoom
+          session={selectedSession}
+          canManage={canTeach}
+          onClose={() => setSelectedSession(null)}
+          onEnded={loadData}
+        />
+      )}
     </div>
   );
 }
