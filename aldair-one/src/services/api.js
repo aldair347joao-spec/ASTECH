@@ -124,4 +124,43 @@ export const authAPI = {
   }
 };
 
+export const adminAPI = {
+  getOverview: () =>
+    apiRequest("/api/admin/overview"),
+
+  getUsers: (filters = {}) => {
+    const params = new URLSearchParams();
+
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
+        params.set(key, String(value));
+      }
+    });
+
+    const query = params.toString();
+
+    return apiRequest(
+      `/api/admin/users${query ? `?${query}` : ""}`
+    );
+  },
+
+  updateUserStatus: (userId, isActive) =>
+    apiRequest(
+      `/api/admin/users/${encodeURIComponent(userId)}/status`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ isActive })
+      }
+    ),
+
+  updateUserRole: (userId, role) =>
+    apiRequest(
+      `/api/admin/users/${encodeURIComponent(userId)}/role`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ role })
+      }
+    )
+};
+
 export default apiRequest;
