@@ -81,6 +81,19 @@ export const authAPI = {
     return data;
   },
 
+  registerSuperAdmin: async (setupData) => {
+    const data = await apiRequest(
+      "/api/auth/setup/super-admin/register",
+      {
+        method: "POST",
+        body: JSON.stringify(setupData)
+      }
+    );
+
+    if (data.token) saveToken(data.token);
+    return data;
+  },
+
   login: async (credentials) => {
     const data = await apiRequest("/api/auth/login", {
       method: "POST",
