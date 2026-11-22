@@ -215,6 +215,12 @@ export const academyAPI = {
   getClasses: (filters = {}) =>
     apiRequest(`/api/academy/classes${buildQuery(filters)}`),
 
+  // CONSULTAR ALUNOS DE UMA TURMA
+  getClassRoster: (classId) =>
+    apiRequest(
+      `/api/academy/classes/${encodeURIComponent(classId)}/roster`
+    ),
+
   createClass: (classData) =>
     apiRequest("/api/academy/classes", {
       method: "POST",
