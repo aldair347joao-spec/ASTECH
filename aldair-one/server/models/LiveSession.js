@@ -94,6 +94,7 @@ const liveSessionSchema = new mongoose.Schema(
         type: String,
         enum: [
           "disabled",
+          "not_started",
           "pending",
           "recording",
           "completed",
