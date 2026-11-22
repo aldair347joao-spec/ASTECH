@@ -8,6 +8,7 @@ import { connectDatabase } from "./config/database.js";
 import authRoutes from "./routes/auth.js";
 
 const app = express();
+app.set("trust proxy", 1);
 
 app.disable("x-powered-by");
 
