@@ -1002,3 +1002,194 @@
     padding-left: 0;
   }
 }
+
+/* =========================================
+   STUDENT ROSTER — LISTA DE ALUNOS
+========================================= */
+
+.academy-roster-modal {
+  max-width: 760px;
+}
+
+.academy-modal-heading p {
+  margin: 7px 0 0;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.academy-roster-stats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.academy-roster-stats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 9px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 12px;
+  background: #172438;
+  text-align: center;
+}
+
+.academy-roster-stats strong {
+  color: #ffffff;
+  font-size: 23px;
+  font-weight: 800;
+}
+
+.academy-roster-stats span {
+  color: #94a3b8;
+  font-size: 10px;
+}
+
+.academy-roster-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 390px;
+  overflow-y: auto;
+  padding-right: 3px;
+}
+
+.academy-roster-student {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid rgba(148, 163, 184, 0.13);
+  border-radius: 12px;
+  background: #172438;
+}
+
+.academy-roster-avatar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 43px;
+  height: 43px;
+  color: #93c5fd;
+  border: 1px solid rgba(96, 165, 250, 0.2);
+  border-radius: 12px;
+  background: rgba(37, 99, 235, 0.15);
+}
+
+.academy-roster-info {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.academy-roster-info strong {
+  overflow: hidden;
+  color: #f1f5f9;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.academy-roster-info span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  color: #94a3b8;
+  font-size: 11px;
+  text-overflow: ellipsis;
+}
+
+.academy-roster-info small {
+  color: #64748b;
+  font-size: 10px;
+}
+
+.academy-roster-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 17px;
+  margin-top: 18px;
+  border-top: 1px solid rgba(148, 163, 184, 0.13);
+}
+
+.academy-roster-footer span {
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.academy-roster-footer button {
+  min-height: 37px;
+  padding: 0 16px;
+  color: #ffffff;
+  border: 1px solid #2563eb;
+  border-radius: 9px;
+  background: #2563eb;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.academy-roster-footer button:hover {
+  background: #1d4ed8;
+}
+
+.academy-roster-student .academy-status {
+  flex-shrink: 0;
+}
+
+/* BOTÃO VER ALUNOS */
+
+.academy-list-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+/* RESPONSIVIDADE DA LISTA */
+
+@media (max-width: 650px) {
+  .academy-roster-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .academy-roster-stats > div {
+    padding: 12px 6px;
+  }
+
+  .academy-roster-stats strong {
+    font-size: 20px;
+  }
+
+  .academy-roster-student {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 11px;
+  }
+
+  .academy-roster-info {
+    flex-basis: calc(100% - 55px);
+  }
+
+  .academy-roster-student .academy-status {
+    margin-left: 53px;
+  }
+
+  .academy-roster-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .academy-roster-footer button {
+    width: 100%;
+  }
+}
