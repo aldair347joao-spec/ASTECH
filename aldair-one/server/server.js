@@ -6,10 +6,11 @@ import helmet from "helmet";
 
 import { connectDatabase } from "./config/database.js";
 import authRoutes from "./routes/auth.js";
+import adminRoutes from "./routes/admin.js";
 
 const app = express();
-app.set("trust proxy", 1);
 
+app.set("trust proxy", 1);
 app.disable("x-powered-by");
 
 app.use(helmet());
@@ -22,7 +23,6 @@ const allowedOrigins = (process.env.FRONTEND_URL || "")
 app.use(
   cors({
     origin(origin, callback) {
-      // Permite pedidos sem Origin, como verificações de saúde.
       if (!origin) {
         return callback(null, true);
       }
@@ -46,7 +46,6 @@ app.use(
 
 app.use(express.json({ limit: "1mb" }));
 
-// Identificação da API
 app.get("/", (req, res) => {
   res.json({
     success: true,
@@ -56,7 +55,6 @@ app.get("/", (req, res) => {
   });
 });
 
-// Verificação de saúde
 app.get("/api/health", (req, res) => {
   res.json({
     success: true,
@@ -66,10 +64,11 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// Rotas de autenticação
 app.use("/api/auth", authRoutes);
 
-// Rota inexistente
+// Rotas exclusivas do painel administrativo
+app.use("/api/admin", adminRoutes);
+
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -77,7 +76,6 @@ app.use((req, res) => {
   });
 });
 
-// Tratamento de erros
 app.use((error, req, res, next) => {
   console.error("Erro no servidor:", error.message);
 
@@ -94,7 +92,6 @@ app.use((error, req, res, next) => {
   });
 });
 
-// Iniciar servidor depois de conectar à base de dados
 const PORT = process.env.PORT || 10000;
 
 async function startServer() {
