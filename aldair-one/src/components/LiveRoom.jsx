@@ -5,7 +5,7 @@ import {
   VideoConference
 } from "@livekit/components-react";
 import "@livekit/components-styles";
-
+import ParticipantRoster from "./ParticipantRoster";
 import { livekitAPI } from "../services/api";
 import "./LiveRoom.css";
 
@@ -216,8 +216,9 @@ function LiveRoom({ session, canManage, onClose, onEnded }) {
             adaptiveStream: true,
             dynacast: true
           }}
-        >
+                >
           <VideoConference />
+          <ParticipantRoster />
         </LiveKitRoom>
       </main>
     </div>
