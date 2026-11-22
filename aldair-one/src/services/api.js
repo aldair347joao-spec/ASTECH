@@ -70,6 +70,23 @@ export async function apiRequest(path, options = {}) {
   return data;
 }
 
+function buildQuery(filters = {}) {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      params.set(key, String(value));
+    }
+  });
+
+  const query = params.toString();
+  return query ? `?${query}` : "";
+}
+
+// ==========================================
+// AUTENTICAÇÃO
+// ==========================================
+
 export const authAPI = {
   register: async (userData) => {
     const data = await apiRequest("/api/auth/register", {
@@ -124,25 +141,16 @@ export const authAPI = {
   }
 };
 
+// ==========================================
+// ADMINISTRAÇÃO
+// ==========================================
+
 export const adminAPI = {
   getOverview: () =>
     apiRequest("/api/admin/overview"),
 
-  getUsers: (filters = {}) => {
-    const params = new URLSearchParams();
-
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== "") {
-        params.set(key, String(value));
-      }
-    });
-
-    const query = params.toString();
-
-    return apiRequest(
-      `/api/admin/users${query ? `?${query}` : ""}`
-    );
-  },
+  getUsers: (filters = {}) =>
+    apiRequest(`/api/admin/users${buildQuery(filters)}`),
 
   updateUserStatus: (userId, isActive) =>
     apiRequest(
@@ -161,6 +169,111 @@ export const adminAPI = {
         body: JSON.stringify({ role })
       }
     )
+};
+
+// ==========================================
+// ACADEMIA
+// ==========================================
+
+export const academyAPI = {
+  // CURSOS
+
+  getCourses: (filters = {}) =>
+    apiRequest(`/api/academy/courses${buildQuery(filters)}`),
+
+  getCourse: (courseId) =>
+    apiRequest(
+      `/api/academy/courses/${encodeURIComponent(courseId)}`
+    ),
+
+  createCourse: (courseData) =>
+    apiRequest("/api/academy/courses", {
+      method: "POST",
+      body: JSON.stringify(courseData)
+    }),
+
+  updateCourse: (courseId, courseData) =>
+    apiRequest(
+      `/api/academy/courses/${encodeURIComponent(courseId)}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(courseData)
+      }
+    ),
+
+  updateCourseStatus: (courseId, status) =>
+    apiRequest(
+      `/api/academy/courses/${encodeURIComponent(courseId)}/status`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ status })
+      }
+    ),
+
+  // TURMAS
+
+  getClasses: (filters = {}) =>
+    apiRequest(`/api/academy/classes${buildQuery(filters)}`),
+
+  createClass: (classData) =>
+    apiRequest("/api/academy/classes", {
+      method: "POST",
+      body: JSON.stringify(classData)
+    }),
+
+  updateClass: (classId, classData) =>
+    apiRequest(
+      `/api/academy/classes/${encodeURIComponent(classId)}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(classData)
+      }
+    ),
+
+  updateClassStatus: (classId, status) =>
+    apiRequest(
+      `/api/academy/classes/${encodeURIComponent(classId)}/status`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ status })
+      }
+    ),
+
+  enrollInClass: (classId) =>
+    apiRequest(
+      `/api/academy/classes/${encodeURIComponent(classId)}/enroll`,
+      {
+        method: "POST"
+      }
+    ),
+
+  // INSCRIÇÕES
+
+  getEnrollments: (filters = {}) =>
+    apiRequest(
+      `/api/academy/enrollments${buildQuery(filters)}`
+    ),
+
+  activateEnrollment: (enrollmentId) =>
+    apiRequest(
+      `/api/academy/enrollments/${encodeURIComponent(enrollmentId)}/activate`,
+      {
+        method: "PATCH"
+      }
+    ),
+
+  // AULAS ONLINE
+
+  getLiveSessions: (filters = {}) =>
+    apiRequest(
+      `/api/academy/live-sessions${buildQuery(filters)}`
+    ),
+
+  createLiveSession: (sessionData) =>
+    apiRequest("/api/academy/live-sessions", {
+      method: "POST",
+      body: JSON.stringify(sessionData)
+    })
 };
 
 export default apiRequest;
