@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 
 import { academyAPI, adminAPI } from "../services/api";
+import StudentProgress from "./StudentProgress";
 import "./Academy.css";
 
 const ROLE_LABELS = {
@@ -360,6 +361,17 @@ function Academy({ user, initialTab = "courses" }) {
     } catch (err) {
       setError(err.message);
     }
+  }
+
+  // ATUALIZAR O PROGRESSO DE UMA INSCRIÇÃO
+  function handleProgressUpdated(updatedEnrollment) {
+    setEnrollments((current) =>
+      current.map((item) =>
+        item._id === updatedEnrollment._id
+          ? updatedEnrollment
+          : item
+      )
+    );
   }
 
   async function handleCreateSession(event) {
@@ -898,6 +910,7 @@ function Academy({ user, initialTab = "courses" }) {
 
   return (
     <div className="academy-page">
+
       <div className="academy-header">
         <div>
           <span className="academy-eyebrow">
@@ -1201,6 +1214,14 @@ function Academy({ user, initialTab = "courses" }) {
                         </button>
                       )}
                     </div>
+
+                    {isStudent &&
+                      ["active", "completed"].includes(enrollment.status) && (
+                        <StudentProgress
+                          enrollment={enrollment}
+                          onUpdated={handleProgressUpdated}
+                        />
+                      )}
                   </article>
                 ))
               )}
