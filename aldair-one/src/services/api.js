@@ -293,11 +293,12 @@ export const academyAPI = {
 };
 
 // ==========================================
-// LIVEKIT - VIDEOCONFERÊNCIA
+// LIVEKIT - VIDEOCONFERÊNCIA E GRAVAÇÕES
 // ==========================================
 
 export const livekitAPI = {
   // INICIAR A AULA
+
   startSession: (sessionId) =>
     apiRequest(
       `/api/livekit/sessions/${encodeURIComponent(sessionId)}/start`,
@@ -306,7 +307,18 @@ export const livekitAPI = {
       }
     ),
 
+  // INICIAR GRAVAÇÃO MP4
+
+  startRecording: (sessionId) =>
+    apiRequest(
+      `/api/livekit/sessions/${encodeURIComponent(sessionId)}/recording/start`,
+      {
+        method: "POST"
+      }
+    ),
+
   // GERAR TOKEN DE ACESSO
+
   getAccessToken: (sessionId) =>
     apiRequest(
       `/api/livekit/sessions/${encodeURIComponent(sessionId)}/token`,
@@ -316,6 +328,7 @@ export const livekitAPI = {
     ),
 
   // TERMINAR A AULA
+
   endSession: (sessionId) =>
     apiRequest(
       `/api/livekit/sessions/${encodeURIComponent(sessionId)}/end`,
@@ -325,12 +338,14 @@ export const livekitAPI = {
     ),
 
   // CONSULTAR PARTICIPANTES
+
   getParticipants: (sessionId) =>
     apiRequest(
       `/api/livekit/sessions/${encodeURIComponent(sessionId)}/participants`
     ),
 
   // SILENCIAR OU REATIVAR MICROFONE
+
   muteParticipant: (sessionId, identity, trackSid, muted) =>
     apiRequest(
       `/api/livekit/sessions/${encodeURIComponent(sessionId)}/participants/${encodeURIComponent(identity)}/mute`,
@@ -344,6 +359,7 @@ export const livekitAPI = {
     ),
 
   // REMOVER PARTICIPANTE
+
   removeParticipant: (sessionId, identity) =>
     apiRequest(
       `/api/livekit/sessions/${encodeURIComponent(sessionId)}/participants/${encodeURIComponent(identity)}`,
