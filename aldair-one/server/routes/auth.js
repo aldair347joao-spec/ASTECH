@@ -153,6 +153,118 @@ router.post("/register", authLimiter, async (req, res) => {
   }
 });
 
+// CRIAÇÃO INICIAL E PROTEGIDA DA CONTA PRINCIPAL
+router.post(
+  "/setup/super-admin/register",
+  adminRequestLimiter,
+  async (req, res) => {
+    try {
+      const { name, password, setupKey } = req.body;
+
+      const configuredKey = process.env.SUPER_ADMIN_SETUP_KEY;
+
+      if (!configuredKey || typeof setupKey !== "string") {
+        return res.status(403).json({
+          success: false,
+          message: "Configuração inicial não autorizada."
+        });
+      }
+
+      const providedBuffer = Buffer.from(setupKey);
+      const configuredBuffer = Buffer.from(configuredKey);
+
+      if (
+        providedBuffer.length !== configuredBuffer.length ||
+        !timingSafeEqual(providedBuffer, configuredBuffer)
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: "Chave de configuração inválida."
+        });
+      }
+
+      if (
+        typeof name !== "string" ||
+        typeof password !== "string"
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Nome e palavra-passe são obrigatórios."
+        });
+      }
+
+      const cleanName = name.trim();
+
+      if (cleanName.length < 2 || cleanName.length > 100) {
+        return res.status(400).json({
+          success: false,
+          message: "O nome deve ter entre 2 e 100 caracteres."
+        });
+      }
+
+      if (password.length < 12 || password.length > 128) {
+        return res.status(400).json({
+          success: false,
+          message: "A palavra-passe deve ter entre 12 e 128 caracteres."
+        });
+      }
+
+      const existingSuperAdmin = await User.findOne({
+        role: "super_admin"
+      });
+
+      if (existingSuperAdmin) {
+        return res.status(409).json({
+          success: false,
+          message: "A conta principal já foi configurada."
+        });
+      }
+
+      const existingAccount = await User.findOne({
+        email: SUPER_ADMIN_EMAIL
+      });
+
+      if (existingAccount) {
+        return res.status(409).json({
+          success: false,
+          message: "Já existe uma conta com o email reservado."
+        });
+      }
+
+      const user = await User.create({
+        name: cleanName,
+        email: SUPER_ADMIN_EMAIL,
+        password,
+        role: "user"
+      });
+
+      const token = generateToken(user);
+
+      return res.status(201).json({
+        success: true,
+        message: "Conta principal criada. Inicia agora a confirmação por email.",
+        token,
+        user
+      });
+    } catch (error) {
+      console.error("Erro na criação inicial:", error.message);
+
+      if (error.code === 11000) {
+        return res.status(409).json({
+          success: false,
+          message: "A conta principal já existe ou foi criada entretanto."
+        });
+      }
+
+      return res.status(500).json({
+        success: false,
+        message: "Não foi possível criar a conta principal."
+      });
+    }
+  }
+);
+
+
 // Login
 router.post("/login", authLimiter, async (req, res) => {
   try {
