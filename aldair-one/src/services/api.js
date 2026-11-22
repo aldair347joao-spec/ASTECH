@@ -294,4 +294,37 @@ export const academyAPI = {
     })
 };
 
+// ==========================================
+// LIVEKIT - VIDEOCONFERÊNCIA
+// ==========================================
+
+export const livekitAPI = {
+  // INICIAR A AULA ONLINE
+  startSession: (sessionId) =>
+    apiRequest(
+      `/api/livekit/sessions/${encodeURIComponent(sessionId)}/start`,
+      {
+        method: "POST"
+      }
+    ),
+
+  // GERAR ACESSO INDIVIDUAL À SALA
+  getAccessToken: (sessionId) =>
+    apiRequest(
+      `/api/livekit/sessions/${encodeURIComponent(sessionId)}/token`,
+      {
+        method: "POST"
+      }
+    ),
+
+  // TERMINAR A AULA ONLINE
+  endSession: (sessionId) =>
+    apiRequest(
+      `/api/livekit/sessions/${encodeURIComponent(sessionId)}/end`,
+      {
+        method: "POST"
+      }
+    )
+};
+
 export default apiRequest;
