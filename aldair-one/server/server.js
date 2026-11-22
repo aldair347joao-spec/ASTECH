@@ -9,6 +9,7 @@ import authRoutes from "./routes/auth.js";
 import adminRoutes from "./routes/admin.js";
 import academyRoutes from "./routes/academy.js";
 import livekitRoutes from "./routes/livekit.js";
+import livekitWebhookRoutes from "./routes/livekitWebhook.js";
 
 const app = express();
 
@@ -47,6 +48,9 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"]
   })
 );
+
+// Webhook LiveKit: deve vir antes do parser JSON.
+app.use("/api/livekit", livekitWebhookRoutes);
 
 app.use(express.json({ limit: "1mb" }));
 
