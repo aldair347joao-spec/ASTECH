@@ -753,21 +753,21 @@ function Academy({ user, initialTab = "courses" }) {
                 }
               />
 
-              {isAdmin && (
-                <label className="academy-checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={sessionForm.recordingEnabled}
-                    onChange={(e) =>
-                      setSessionForm({
-                        ...sessionForm,
-                        recordingEnabled: e.target.checked
-                      })
-                    }
-                  />
-                  Permitir gravação desta aula
-                </label>
-              )}
+              {(isAdmin || user?.role === "instructor") && (
+  <label className="academy-checkbox-label">
+    <input
+      type="checkbox"
+      checked={sessionForm.recordingEnabled}
+      onChange={(e) =>
+        setSessionForm({
+          ...sessionForm,
+          recordingEnabled: e.target.checked
+        })
+      }
+    />
+    Permitir gravação desta aula
+  </label>
+)}
 
               <button disabled={saving} type="submit">
                 {saving ? "A agendar..." : "Agendar aula"}
