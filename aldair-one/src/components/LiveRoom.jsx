@@ -218,7 +218,10 @@ function LiveRoom({ session, canManage, onClose, onEnded }) {
           }}
                 >
           <VideoConference />
-          <ParticipantRoster />
+          <ParticipantRoster
+  sessionId={session._id}
+  canManage={canManage}
+/>
         </LiveKitRoom>
       </main>
     </div>
