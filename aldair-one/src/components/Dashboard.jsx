@@ -12,14 +12,29 @@ import {
   X,
   Bell,
   ChevronRight,
-  Settings
+  Settings,
+  Crown,
+  Mail,
+  LockKeyhole
 } from "lucide-react";
 
+import { authAPI } from "../services/api";
 import "./Dashboard.css";
 
+const SUPER_ADMIN_EMAIL = "aldair347joao@gmail.com";
+
 function Dashboard({ user, onLogout }) {
+  const [currentUser, setCurrentUser] = useState(user);
   const [activeSection, setActiveSection] = useState("overview");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [verificationCode, setVerificationCode] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState("");
+
+  const canSetupSuperAdmin =
+    currentUser?.email?.toLowerCase() === SUPER_ADMIN_EMAIL &&
+    currentUser?.role !== "super_admin";
 
   const sections = [
     { id: "overview", label: "Visão geral", icon: LayoutDashboard },
@@ -27,10 +42,14 @@ function Dashboard({ user, onLogout }) {
     { id: "academy", label: "Academia", icon: GraduationCap },
     { id: "classes", label: "Aulas online", icon: Video },
     { id: "services", label: "Serviços", icon: BriefcaseBusiness },
-    { id: "security", label: "Segurança", icon: ShieldCheck }
+    { id: "security", label: "Segurança", icon: ShieldCheck },
+    ...(canSetupSuperAdmin
+      ? [{ id: "superadmin-setup", label: "Conta principal", icon: Crown }]
+      : [])
   ];
 
   const roleLabels = {
+    super_admin: "Super Administrador",
     admin: "Administrador",
     instructor: "Formador",
     student: "Aluno",
@@ -38,10 +57,145 @@ function Dashboard({ user, onLogout }) {
     user: "Utilizador"
   };
 
-  const role = roleLabels[user?.role] || "Utilizador";
+  const role = roleLabels[currentUser?.role] || "Utilizador";
+
+  async function requestAdminCode() {
+    setLoading(true);
+    setMessage("");
+    setMessageType("");
+
+    try {
+      const response = await authAPI.requestSuperAdminCode();
+
+      setMessage(response.message || "Código enviado por email.");
+      setMessageType("success");
+    } catch (error) {
+      setMessage(error.message);
+      setMessageType("error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function verifyAdminCode(event) {
+    event.preventDefault();
+
+    if (!/^\d{6}$/.test(verificationCode)) {
+      setMessage("Introduz os seis dígitos recebidos por email.");
+      setMessageType("error");
+      return;
+    }
+
+    setLoading(true);
+    setMessage("");
+    setMessageType("");
+
+    try {
+      const response = await authAPI.verifySuperAdminCode(
+        verificationCode
+      );
+
+      if (response.user) {
+        setCurrentUser(response.user);
+      }
+
+      setVerificationCode("");
+      setMessage(
+        "Conta principal confirmada. És agora o Super Administrador do ALDAIR ONE."
+      );
+      setMessageType("success");
+      setActiveSection("overview");
+    } catch (error) {
+      setMessage(error.message);
+      setMessageType("error");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   function renderContent() {
     switch (activeSection) {
+      case "superadmin-setup":
+        return (
+          <section className="dashboard-panel">
+            <Crown size={34} />
+            <h2>Configuração da conta principal</h2>
+
+            <p className="dashboard-muted">
+              Esta área permite confirmar a propriedade da conta
+              principal do ALDAIR ONE através de um código enviado
+              para o endereço de email reservado.
+            </p>
+
+            <div className="dashboard-security">
+              <div>
+                <Mail size={23} />
+                <span>
+                  <strong>Email reservado</strong>
+                  <small>{SUPER_ADMIN_EMAIL}</small>
+                </span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="dashboard-admin-button"
+              onClick={requestAdminCode}
+              disabled={loading}
+            >
+              <Mail size={18} />
+              {loading ? "A processar..." : "Enviar código de segurança"}
+            </button>
+
+            <form
+              className="dashboard-admin-form"
+              onSubmit={verifyAdminCode}
+            >
+              <label htmlFor="super-admin-code">
+                Código de confirmação
+              </label>
+
+              <input
+                id="super-admin-code"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
+                placeholder="Introduz os 6 dígitos"
+                value={verificationCode}
+                onChange={(event) =>
+                  setVerificationCode(
+                    event.target.value.replace(/\D/g, "").slice(0, 6)
+                  )
+                }
+              />
+
+              <button
+                type="submit"
+                className="dashboard-admin-button"
+                disabled={loading || verificationCode.length !== 6}
+              >
+                <LockKeyhole size={18} />
+                {loading ? "A confirmar..." : "Confirmar conta principal"}
+              </button>
+            </form>
+
+            {message && (
+              <p
+                className={`dashboard-admin-message ${messageType}`}
+                role="status"
+              >
+                {message}
+              </p>
+            )}
+
+            <p className="dashboard-muted">
+              O código expira após 10 minutos. Nunca partilhes este
+              código com outra pessoa.
+            </p>
+          </section>
+        );
+
       case "profile":
         return (
           <section className="dashboard-panel">
@@ -52,12 +206,12 @@ function Dashboard({ user, onLogout }) {
 
             <div className="dashboard-profile">
               <div className="dashboard-avatar">
-                {user?.name?.charAt(0)?.toUpperCase() || "U"}
+                {currentUser?.name?.charAt(0)?.toUpperCase() || "U"}
               </div>
 
               <div>
-                <h3>{user?.name || "Utilizador"}</h3>
-                <p>{user?.email}</p>
+                <h3>{currentUser?.name || "Utilizador"}</h3>
+                <p>{currentUser?.email}</p>
                 <span>{role}</span>
               </div>
             </div>
@@ -65,11 +219,11 @@ function Dashboard({ user, onLogout }) {
             <div className="dashboard-info-grid">
               <div>
                 <small>Nome completo</small>
-                <strong>{user?.name || "Não disponível"}</strong>
+                <strong>{currentUser?.name || "Não disponível"}</strong>
               </div>
               <div>
                 <small>Email</small>
-                <strong>{user?.email || "Não disponível"}</strong>
+                <strong>{currentUser?.email || "Não disponível"}</strong>
               </div>
               <div>
                 <small>Tipo de conta</small>
@@ -147,7 +301,10 @@ function Dashboard({ user, onLogout }) {
                 </span>
               </div>
 
-              <button onClick={onLogout} className="dashboard-logout-button">
+              <button
+                onClick={onLogout}
+                className="dashboard-logout-button"
+              >
                 <LogOut size={17} />
                 Terminar sessão
               </button>
@@ -163,16 +320,29 @@ function Dashboard({ user, onLogout }) {
                 <span className="dashboard-eyebrow">
                   ÁREA PESSOAL · ALDAIR ONE
                 </span>
-                <h2>Olá, {user?.name?.split(" ")[0] || "bem-vindo"}!</h2>
+                <h2>
+                  Olá, {currentUser?.name?.split(" ")[0] || "bem-vindo"}!
+                </h2>
                 <p>
                   Bem-vindo ao teu espaço pessoal. Aqui podes acompanhar
                   a tua actividade na plataforma.
                 </p>
               </div>
+
               <div className="dashboard-welcome-icon">
                 <LayoutDashboard size={42} />
               </div>
             </div>
+
+            {currentUser?.role === "super_admin" && (
+              <div className="dashboard-superadmin-banner">
+                <Crown size={22} />
+                <div>
+                  <strong>Super Administrador</strong>
+                  <span>Conta principal do ALDAIR ONE.</span>
+                </div>
+              </div>
+            )}
 
             <div className="dashboard-stats">
               <article>
@@ -205,22 +375,28 @@ function Dashboard({ user, onLogout }) {
               </div>
 
               <div className="dashboard-shortcuts">
-                {sections.slice(1, 5).map((section) => {
-                  const Icon = section.icon;
+                {sections
+                  .filter((section) =>
+                    ["profile", "academy", "classes", "services"].includes(
+                      section.id
+                    )
+                  )
+                  .map((section) => {
+                    const Icon = section.icon;
 
-                  return (
-                    <button
-                      key={section.id}
-                      onClick={() => setActiveSection(section.id)}
-                    >
-                      <span className="dashboard-shortcut-icon">
-                        <Icon size={22} />
-                      </span>
-                      <span>{section.label}</span>
-                      <ChevronRight size={18} />
-                    </button>
-                  );
-                })}
+                    return (
+                      <button
+                        key={section.id}
+                        onClick={() => setActiveSection(section.id)}
+                      >
+                        <span className="dashboard-shortcut-icon">
+                          <Icon size={22} />
+                        </span>
+                        <span>{section.label}</span>
+                        <ChevronRight size={18} />
+                      </button>
+                    );
+                  })}
               </div>
             </section>
           </>
@@ -230,7 +406,13 @@ function Dashboard({ user, onLogout }) {
 
   return (
     <div className="dashboard-layout">
-      <aside className={menuOpen ? "dashboard-sidebar open" : "dashboard-sidebar"}>
+      <aside
+        className={
+          menuOpen
+            ? "dashboard-sidebar open"
+            : "dashboard-sidebar"
+        }
+      >
         <div className="dashboard-brand">
           <span className="dashboard-brand-mark">A</span>
           <span>
@@ -249,10 +431,10 @@ function Dashboard({ user, onLogout }) {
 
         <div className="dashboard-user">
           <div className="dashboard-avatar">
-            {user?.name?.charAt(0)?.toUpperCase() || "U"}
+            {currentUser?.name?.charAt(0)?.toUpperCase() || "U"}
           </div>
           <div>
-            <strong>{user?.name || "Utilizador"}</strong>
+            <strong>{currentUser?.name || "Utilizador"}</strong>
             <span>{role}</span>
           </div>
         </div>
@@ -266,10 +448,13 @@ function Dashboard({ user, onLogout }) {
             return (
               <button
                 key={section.id}
-                className={activeSection === section.id ? "active" : ""}
+                className={
+                  activeSection === section.id ? "active" : ""
+                }
                 onClick={() => {
                   setActiveSection(section.id);
                   setMenuOpen(false);
+                  setMessage("");
                 }}
               >
                 <Icon size={19} />
@@ -310,7 +495,9 @@ function Dashboard({ user, onLogout }) {
             <span>ALDAIR ONE</span>
             <ChevronRight size={15} />
             <strong>
-              {sections.find((item) => item.id === activeSection)?.label}
+              {sections.find(
+                (item) => item.id === activeSection
+              )?.label || "Visão geral"}
             </strong>
           </div>
 
