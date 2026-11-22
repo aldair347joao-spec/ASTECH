@@ -1,6 +1,26 @@
 
 import mongoose from "mongoose";
 
+const blockedParticipantSchema = new mongoose.Schema(
+  {
+    identity: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    removedAt: {
+      type: Date,
+      default: Date.now
+    },
+    removedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true
+    }
+  },
+  { _id: false }
+);
+
 const liveSessionSchema = new mongoose.Schema(
   {
     title: {
@@ -134,6 +154,11 @@ const liveSessionSchema = new mongoose.Schema(
       type: Number,
       default: 0,
       min: 0
+    },
+
+    blockedParticipants: {
+      type: [blockedParticipantSchema],
+      default: []
     },
 
     createdBy: {
