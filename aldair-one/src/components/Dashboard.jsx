@@ -241,10 +241,22 @@ function Dashboard({ user, onLogout }) {
         );
 
       case "academy":
-        return <Academy user={currentUser} />;
+        return (
+          <Academy
+            key="academy"
+            user={currentUser}
+            initialTab="courses"
+          />
+        );
 
       case "classes":
-        return <Academy user={currentUser} />;
+        return (
+          <Academy
+            key="classes"
+            user={currentUser}
+            initialTab="sessions"
+          />
+        );
 
       case "services":
         return (
