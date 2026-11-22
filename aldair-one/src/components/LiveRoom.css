@@ -344,3 +344,93 @@
     font-size: 11px;
   }
 }
+
+/* ==========================================
+   ALDAIR ONE — GESTÃO DE PARTICIPANTES
+========================================== */
+
+.participant-roster-management {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 13px;
+  border-bottom: 1px solid #263449;
+}
+
+.participant-roster-management span {
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.participant-roster-management button,
+.participant-actions button {
+  min-height: 32px;
+  padding: 6px 10px;
+  color: #fff;
+  background: #1d4ed8;
+  border: 1px solid #2563eb;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.participant-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
+.participant-actions .participant-remove-button {
+  background: #991b1b;
+  border-color: #b91c1c;
+}
+
+.participant-actions button:disabled,
+.participant-roster-management button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.participant-roster-error,
+.participant-roster-notice {
+  margin: 8px 12px;
+  padding: 9px;
+  border-radius: 7px;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.participant-roster-error {
+  color: #fecaca;
+  background: #450a0a;
+}
+
+.participant-roster-notice {
+  color: #bbf7d0;
+  background: #14532d;
+}
+
+@media (max-width: 650px) {
+  .participant-roster-panel {
+    max-height: 55vh;
+  }
+
+  .participant-roster-panel li {
+    flex-wrap: wrap;
+  }
+
+  .participant-actions {
+    width: 100%;
+    padding-left: 47px;
+    justify-content: flex-start;
+  }
+
+  .participant-actions button {
+    flex: 1;
+    min-width: 75px;
+  }
+}
