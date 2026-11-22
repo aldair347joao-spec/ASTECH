@@ -13,7 +13,11 @@ import {
   CheckCircle2,
   AlertCircle,
   Lock,
-  X
+  X,
+  Eye,
+  Mail,
+  UserCheck,
+  UserX
 } from "lucide-react";
 
 import { academyAPI, adminAPI } from "../services/api";
@@ -60,6 +64,21 @@ function formatPrice(price) {
   }).format(amount);
 }
 
+function statusLabel(status) {
+  const labels = {
+    active: "Ativa",
+    pending: "Pendente",
+    completed: "Concluída",
+    cancelled: "Cancelada",
+    paid: "Pago",
+    failed: "Falhou",
+    refunded: "Reembolsado",
+    not_required: "Não necessário"
+  };
+
+  return labels[status] || status || "Não definido";
+}
+
 function Academy({ user, initialTab = "courses" }) {
   const role = user?.role || "user";
   const isAdmin = ["super_admin", "admin"].includes(role);
@@ -80,6 +99,11 @@ function Academy({ user, initialTab = "courses" }) {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [showForm, setShowForm] = useState(false);
+
+  // ESTADO DA LISTA DE ALUNOS
+  const [selectedRoster, setSelectedRoster] = useState(null);
+  const [rosterLoading, setRosterLoading] = useState(false);
+  const [rosterError, setRosterError] = useState("");
 
   const [courseForm, setCourseForm] = useState({
     title: "",
@@ -168,6 +192,38 @@ function Academy({ user, initialTab = "courses" }) {
 
   function closeForm() {
     setShowForm(false);
+  }
+
+  // CONSULTAR ALUNOS DE UMA TURMA
+  async function handleViewRoster(classItem) {
+    setRosterLoading(true);
+    setRosterError("");
+    setSelectedRoster({
+      class: classItem,
+      enrollments: [],
+      statistics: null
+    });
+
+    try {
+      const response = await academyAPI.getClassRoster(classItem._id);
+
+      setSelectedRoster({
+        class: response.class || classItem,
+        enrollments: response.enrollments || [],
+        statistics: response.class?.statistics || null
+      });
+    } catch (err) {
+      setRosterError(
+        err.message || "Não foi possível carregar os alunos desta turma."
+      );
+    } finally {
+      setRosterLoading(false);
+    }
+  }
+
+  function closeRoster() {
+    setSelectedRoster(null);
+    setRosterError("");
   }
 
   async function handleCreateCourse(event) {
@@ -705,6 +761,134 @@ function Academy({ user, initialTab = "courses" }) {
     );
   }
 
+  function renderRoster() {
+    if (!selectedRoster) return null;
+
+    const rosterClass = selectedRoster.class;
+    const statistics = selectedRoster.statistics;
+    const roster = selectedRoster.enrollments || [];
+
+    return (
+      <div
+        className="academy-modal-backdrop"
+        onClick={(event) => {
+          if (event.target === event.currentTarget) closeRoster();
+        }}
+      >
+        <section
+          className="academy-modal academy-roster-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Lista de alunos da turma"
+        >
+          <div className="academy-modal-heading">
+            <div>
+              <span>ALDAIR ONE ACADEMY</span>
+              <h2>Alunos da turma</h2>
+              <p>{rosterClass?.name}</p>
+            </div>
+
+            <button
+              type="button"
+              onClick={closeRoster}
+              aria-label="Fechar lista de alunos"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          {rosterLoading ? (
+            <div className="academy-loading">
+              <RefreshCw size={24} />
+              <span>A carregar alunos...</span>
+            </div>
+          ) : rosterError ? (
+            <div className="academy-alert error">
+              <AlertCircle size={18} />
+              {rosterError}
+            </div>
+          ) : (
+            <>
+              {statistics && (
+                <div className="academy-roster-stats">
+                  <div>
+                    <strong>{statistics.active ?? 0}</strong>
+                    <span>Ativos</span>
+                  </div>
+                  <div>
+                    <strong>{statistics.pending ?? 0}</strong>
+                    <span>Pendentes</span>
+                  </div>
+                  <div>
+                    <strong>{statistics.completed ?? 0}</strong>
+                    <span>Concluídos</span>
+                  </div>
+                  <div>
+                    <strong>{statistics.cancelled ?? 0}</strong>
+                    <span>Cancelados</span>
+                  </div>
+                  <div>
+                    <strong>{statistics.available ?? 0}</strong>
+                    <span>Vagas livres</span>
+                  </div>
+                </div>
+              )}
+
+              {roster.length === 0 ? (
+                <div className="academy-empty">
+                  <Users size={30} />
+                  <strong>Esta turma ainda não tem inscrições.</strong>
+                  <span>Os alunos inscritos aparecerão aqui.</span>
+                </div>
+              ) : (
+                <div className="academy-roster-list">
+                  {roster.map((enrollment) => (
+                    <article
+                      className="academy-roster-student"
+                      key={enrollment._id}
+                    >
+                      <div className="academy-roster-avatar">
+                        <GraduationCap size={21} />
+                      </div>
+
+                      <div className="academy-roster-info">
+                        <strong>
+                          {enrollment.student?.name || "Aluno sem nome"}
+                        </strong>
+                        <span>
+                          <Mail size={13} />
+                          {enrollment.student?.email || "Email não disponível"}
+                        </span>
+                        <small>
+                          Inscrição: {formatDate(enrollment.enrolledAt)}
+                        </small>
+                      </div>
+
+                      <span
+                        className={`academy-status ${enrollment.status}`}
+                      >
+                        {statusLabel(enrollment.status)}
+                      </span>
+                    </article>
+                  ))}
+                </div>
+              )}
+
+              <div className="academy-roster-footer">
+                <span>
+                  {roster.length} inscrição(ões) registada(s)
+                </span>
+                <button type="button" onClick={closeRoster}>
+                  Fechar
+                </button>
+              </div>
+            </>
+          )}
+        </section>
+      </div>
+    );
+  }
+
   const tabs = [
     { id: "courses", label: "Cursos", icon: BookOpen },
     { id: "classes", label: "Turmas", icon: Users },
@@ -793,7 +977,7 @@ function Academy({ user, initialTab = "courses" }) {
             {activeTab === "courses" &&
               "Explora os cursos disponíveis na Academia."}
             {activeTab === "classes" &&
-              "Consulta as turmas e acompanha as inscrições."}
+              "Consulta as turmas, os alunos e acompanha as inscrições."}
             {activeTab === "enrollments" &&
               "Acompanha os pedidos e o estado das inscrições."}
             {activeTab === "sessions" &&
@@ -917,6 +1101,16 @@ function Academy({ user, initialTab = "courses" }) {
                       <span className={`academy-status ${classItem.status}`}>
                         {classItem.status}
                       </span>
+
+                      {canTeach && (
+                        <button
+                          type="button"
+                          onClick={() => handleViewRoster(classItem)}
+                        >
+                          <Eye size={15} />
+                          Ver alunos
+                        </button>
+                      )}
 
                       {isStudent && classItem.status === "open" && (
                         <button
@@ -1087,6 +1281,7 @@ function Academy({ user, initialTab = "courses" }) {
       </div>
 
       {renderForm()}
+      {renderRoster()}
     </div>
   );
 }
