@@ -14,10 +14,12 @@ import {
   ChevronRight,
   Settings,
   Crown,
-  LockKeyhole
+  LockKeyhole,
+  Users
 } from "lucide-react";
 
 import { authAPI } from "../services/api";
+import AdminPanel from "./AdminPanel";
 import "./Dashboard.css";
 
 const SUPER_ADMIN_EMAIL = "aldair347joao@gmail.com";
@@ -31,6 +33,10 @@ function Dashboard({ user, onLogout }) {
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("");
 
+  const isSuperAdmin =
+    currentUser?.role === "super_admin" &&
+    currentUser?.email?.toLowerCase() === SUPER_ADMIN_EMAIL;
+
   const canSetupSuperAdmin =
     currentUser?.email?.toLowerCase() === SUPER_ADMIN_EMAIL &&
     currentUser?.role !== "super_admin";
@@ -42,8 +48,25 @@ function Dashboard({ user, onLogout }) {
     { id: "classes", label: "Aulas online", icon: Video },
     { id: "services", label: "Serviços", icon: BriefcaseBusiness },
     { id: "security", label: "Segurança", icon: ShieldCheck },
+
+    ...(isSuperAdmin
+      ? [
+          {
+            id: "admin",
+            label: "Painel administrativo",
+            icon: Users
+          }
+        ]
+      : []),
+
     ...(canSetupSuperAdmin
-      ? [{ id: "superadmin-setup", label: "Conta principal", icon: Crown }]
+      ? [
+          {
+            id: "superadmin-setup",
+            label: "Conta principal",
+            icon: Crown
+          }
+        ]
       : [])
   ];
 
@@ -94,6 +117,21 @@ function Dashboard({ user, onLogout }) {
 
   function renderContent() {
     switch (activeSection) {
+      case "admin":
+        if (!isSuperAdmin) {
+          return (
+            <section className="dashboard-panel">
+              <ShieldCheck size={34} />
+              <h2>Acesso não autorizado</h2>
+              <p className="dashboard-muted">
+                Não tens permissões para aceder ao painel administrativo.
+              </p>
+            </section>
+          );
+        }
+
+        return <AdminPanel />;
+
       case "superadmin-setup":
         return (
           <section className="dashboard-panel">
@@ -311,7 +349,7 @@ function Dashboard({ user, onLogout }) {
               </div>
             </div>
 
-            {currentUser?.role === "super_admin" && (
+            {isSuperAdmin && (
               <div className="dashboard-superadmin-banner">
                 <Crown size={22} />
                 <div>
