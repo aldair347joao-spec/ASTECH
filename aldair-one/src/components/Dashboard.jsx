@@ -14,7 +14,6 @@ import {
   ChevronRight,
   Settings,
   Crown,
-  Mail,
   LockKeyhole
 } from "lucide-react";
 
@@ -27,7 +26,7 @@ function Dashboard({ user, onLogout }) {
   const [currentUser, setCurrentUser] = useState(user);
   const [activeSection, setActiveSection] = useState("overview");
   const [menuOpen, setMenuOpen] = useState(false);
-  const [verificationCode, setVerificationCode] = useState("");
+  const [setupKey, setSetupKey] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("");
@@ -59,29 +58,11 @@ function Dashboard({ user, onLogout }) {
 
   const role = roleLabels[currentUser?.role] || "Utilizador";
 
-  async function requestAdminCode() {
-    setLoading(true);
-    setMessage("");
-    setMessageType("");
-
-    try {
-      const response = await authAPI.requestSuperAdminCode();
-
-      setMessage(response.message || "Código enviado por email.");
-      setMessageType("success");
-    } catch (error) {
-      setMessage(error.message);
-      setMessageType("error");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function verifyAdminCode(event) {
+  async function activateSuperAdmin(event) {
     event.preventDefault();
 
-    if (!/^\d{6}$/.test(verificationCode)) {
-      setMessage("Introduz os seis dígitos recebidos por email.");
+    if (!setupKey.trim()) {
+      setMessage("Introduz a chave privada de ativação.");
       setMessageType("error");
       return;
     }
@@ -91,17 +72,15 @@ function Dashboard({ user, onLogout }) {
     setMessageType("");
 
     try {
-      const response = await authAPI.verifySuperAdminCode(
-        verificationCode
-      );
+      const response = await authAPI.activateSuperAdmin(setupKey);
 
       if (response.user) {
         setCurrentUser(response.user);
       }
 
-      setVerificationCode("");
+      setSetupKey("");
       setMessage(
-        "Conta principal confirmada. És agora o Super Administrador do ALDAIR ONE."
+        "Ativação concluída. A tua conta é agora o Super Administrador do ALDAIR ONE."
       );
       setMessageType("success");
       setActiveSection("overview");
@@ -119,17 +98,18 @@ function Dashboard({ user, onLogout }) {
         return (
           <section className="dashboard-panel">
             <Crown size={34} />
-            <h2>Configuração da conta principal</h2>
+
+            <h2>Ativação da conta principal</h2>
 
             <p className="dashboard-muted">
-              Esta área permite confirmar a propriedade da conta
-              principal do ALDAIR ONE através de um código enviado
-              para o endereço de email reservado.
+              Esta área permite ativar os privilégios exclusivos
+              de Super Administrador através da chave privada
+              configurada no servidor.
             </p>
 
             <div className="dashboard-security">
               <div>
-                <Mail size={23} />
+                <ShieldCheck size={23} />
                 <span>
                   <strong>Email reservado</strong>
                   <small>{SUPER_ADMIN_EMAIL}</small>
@@ -137,46 +117,31 @@ function Dashboard({ user, onLogout }) {
               </div>
             </div>
 
-            <button
-              type="button"
-              className="dashboard-admin-button"
-              onClick={requestAdminCode}
-              disabled={loading}
-            >
-              <Mail size={18} />
-              {loading ? "A processar..." : "Enviar código de segurança"}
-            </button>
-
             <form
               className="dashboard-admin-form"
-              onSubmit={verifyAdminCode}
+              onSubmit={activateSuperAdmin}
             >
-              <label htmlFor="super-admin-code">
-                Código de confirmação
+              <label htmlFor="super-admin-key">
+                Chave privada de ativação
               </label>
 
               <input
-                id="super-admin-code"
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                maxLength={6}
-                placeholder="Introduz os 6 dígitos"
-                value={verificationCode}
-                onChange={(event) =>
-                  setVerificationCode(
-                    event.target.value.replace(/\D/g, "").slice(0, 6)
-                  )
-                }
+                id="super-admin-key"
+                type="password"
+                autoComplete="new-password"
+                placeholder="Introduz a tua chave privada"
+                value={setupKey}
+                onChange={(event) => setSetupKey(event.target.value)}
+                required
               />
 
               <button
                 type="submit"
                 className="dashboard-admin-button"
-                disabled={loading || verificationCode.length !== 6}
+                disabled={loading || !setupKey.trim()}
               >
                 <LockKeyhole size={18} />
-                {loading ? "A confirmar..." : "Confirmar conta principal"}
+                {loading ? "A ativar..." : "Ativar Super Administrador"}
               </button>
             </form>
 
@@ -190,8 +155,8 @@ function Dashboard({ user, onLogout }) {
             )}
 
             <p className="dashboard-muted">
-              O código expira após 10 minutos. Nunca partilhes este
-              código com outra pessoa.
+              A chave é enviada diretamente ao servidor através
+              de uma ligação segura. Não a partilhes com ninguém.
             </p>
           </section>
         );
@@ -200,6 +165,7 @@ function Dashboard({ user, onLogout }) {
         return (
           <section className="dashboard-panel">
             <h2>Meu perfil</h2>
+
             <p className="dashboard-muted">
               Consulta os dados associados à tua conta.
             </p>
@@ -221,10 +187,12 @@ function Dashboard({ user, onLogout }) {
                 <small>Nome completo</small>
                 <strong>{currentUser?.name || "Não disponível"}</strong>
               </div>
+
               <div>
                 <small>Email</small>
                 <strong>{currentUser?.email || "Não disponível"}</strong>
               </div>
+
               <div>
                 <small>Tipo de conta</small>
                 <strong>{role}</strong>
@@ -238,10 +206,12 @@ function Dashboard({ user, onLogout }) {
           <section className="dashboard-panel">
             <GraduationCap size={32} />
             <h2>ALDAIR ONE Academy</h2>
+
             <p className="dashboard-muted">
               Aqui poderás acompanhar os teus cursos, inscrições,
               materiais de aprendizagem e certificados.
             </p>
+
             <div className="dashboard-empty">
               <GraduationCap size={28} />
               <strong>A tua área de formação</strong>
@@ -255,9 +225,11 @@ function Dashboard({ user, onLogout }) {
           <section className="dashboard-panel">
             <Video size={32} />
             <h2>Aulas online</h2>
+
             <p className="dashboard-muted">
               Acede às salas de videoconferência e acompanha as tuas aulas.
             </p>
+
             <div className="dashboard-empty">
               <Video size={28} />
               <strong>Nenhuma sala disponível</strong>
@@ -271,10 +243,12 @@ function Dashboard({ user, onLogout }) {
           <section className="dashboard-panel">
             <BriefcaseBusiness size={32} />
             <h2>Serviços tecnológicos</h2>
+
             <p className="dashboard-muted">
               Acompanha os teus pedidos de desenvolvimento,
               automação e consultoria tecnológica.
             </p>
+
             <div className="dashboard-empty">
               <BriefcaseBusiness size={28} />
               <strong>Os teus pedidos</strong>
@@ -288,6 +262,7 @@ function Dashboard({ user, onLogout }) {
           <section className="dashboard-panel">
             <ShieldCheck size={32} />
             <h2>Segurança da conta</h2>
+
             <p className="dashboard-muted">
               Gere o acesso à tua conta ALDAIR ONE.
             </p>
@@ -320,9 +295,11 @@ function Dashboard({ user, onLogout }) {
                 <span className="dashboard-eyebrow">
                   ÁREA PESSOAL · ALDAIR ONE
                 </span>
+
                 <h2>
                   Olá, {currentUser?.name?.split(" ")[0] || "bem-vindo"}!
                 </h2>
+
                 <p>
                   Bem-vindo ao teu espaço pessoal. Aqui podes acompanhar
                   a tua actividade na plataforma.
@@ -392,6 +369,7 @@ function Dashboard({ user, onLogout }) {
                         <span className="dashboard-shortcut-icon">
                           <Icon size={22} />
                         </span>
+
                         <span>{section.label}</span>
                         <ChevronRight size={18} />
                       </button>
@@ -415,6 +393,7 @@ function Dashboard({ user, onLogout }) {
       >
         <div className="dashboard-brand">
           <span className="dashboard-brand-mark">A</span>
+
           <span>
             <strong>ALDAIR ONE</strong>
             <small>PERSONAL SPACE</small>
@@ -433,6 +412,7 @@ function Dashboard({ user, onLogout }) {
           <div className="dashboard-avatar">
             {currentUser?.name?.charAt(0)?.toUpperCase() || "U"}
           </div>
+
           <div>
             <strong>{currentUser?.name || "Utilizador"}</strong>
             <span>{role}</span>
@@ -469,6 +449,7 @@ function Dashboard({ user, onLogout }) {
             <LogOut size={19} />
             Terminar sessão
           </button>
+
           <small>ALDAIR ONE © {new Date().getFullYear()}</small>
         </div>
       </aside>
@@ -494,6 +475,7 @@ function Dashboard({ user, onLogout }) {
           <div className="dashboard-breadcrumb">
             <span>ALDAIR ONE</span>
             <ChevronRight size={15} />
+
             <strong>
               {sections.find(
                 (item) => item.id === activeSection
