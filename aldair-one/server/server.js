@@ -8,6 +8,7 @@ import { connectDatabase } from "./config/database.js";
 import authRoutes from "./routes/auth.js";
 import adminRoutes from "./routes/admin.js";
 import academyRoutes from "./routes/academy.js";
+import livekitRoutes from "./routes/livekit.js";
 
 const app = express();
 
@@ -75,6 +76,9 @@ app.use("/api/admin", adminRoutes);
 
 // Academia: cursos, turmas, inscrições e aulas online
 app.use("/api/academy", academyRoutes);
+
+// Videoconferência LiveKit
+app.use("/api/livekit", livekitRoutes);
 
 // Rota não encontrada
 app.use((req, res) => {
