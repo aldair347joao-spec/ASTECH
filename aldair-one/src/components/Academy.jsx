@@ -12,7 +12,6 @@ import {
   GraduationCap,
   CheckCircle2,
   AlertCircle,
-  PlayCircle,
   Lock,
   X
 } from "lucide-react";
@@ -61,14 +60,14 @@ function formatPrice(price) {
   }).format(amount);
 }
 
-function Academy({ user }) {
+function Academy({ user, initialTab = "courses" }) {
   const role = user?.role || "user";
   const isAdmin = ["super_admin", "admin"].includes(role);
   const isInstructor = role === "instructor";
   const isStudent = role === "student";
   const canTeach = isAdmin || isInstructor;
 
-  const [activeTab, setActiveTab] = useState("courses");
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   const [courses, setCourses] = useState([]);
   const [classes, setClasses] = useState([]);
