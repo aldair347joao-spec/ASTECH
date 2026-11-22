@@ -215,3 +215,132 @@
     touch-action: manipulation;
   }
 }
+
+/* ==========================================
+   ALDAIR ONE — PAINEL DE PARTICIPANTES
+========================================== */
+
+.live-room-content {
+  position: relative;
+}
+
+.participant-roster {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 150;
+}
+
+.participant-roster-toggle {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 42px;
+  padding: 9px 13px;
+  color: #fff;
+  background: #17243a;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.participant-roster-toggle strong {
+  color: #60a5fa;
+}
+
+.participant-roster-panel {
+  width: min(320px, calc(100vw - 28px));
+  max-height: 65vh;
+  margin-top: 9px;
+  overflow-y: auto;
+  color: #f8fafc;
+  background: #101a2b;
+  border: 1px solid #334155;
+  border-radius: 13px;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.45);
+}
+
+.participant-roster-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 15px;
+  border-bottom: 1px solid #263449;
+}
+
+.participant-roster-heading h3 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.participant-roster-heading span {
+  color: #60a5fa;
+  font-size: 11px;
+}
+
+.participant-roster-panel ul {
+  margin: 0;
+  padding: 5px 12px;
+  list-style: none;
+}
+
+.participant-roster-panel li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 2px;
+  border-bottom: 1px solid #263449;
+}
+
+.participant-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 37px;
+  height: 37px;
+  flex-shrink: 0;
+  color: #fff;
+  background: #1d4ed8;
+  border-radius: 50%;
+  font-weight: 800;
+}
+
+.participant-details {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.participant-details strong {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+}
+
+.participant-details span,
+.participant-you {
+  color: #60a5fa;
+  font-size: 11px;
+}
+
+.participant-roster-empty {
+  padding: 15px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+@media (max-width: 650px) {
+  .participant-roster {
+    top: 8px;
+    right: 8px;
+  }
+
+  .participant-roster-toggle {
+    min-height: 38px;
+    padding: 7px 10px;
+    font-size: 11px;
+  }
+}
