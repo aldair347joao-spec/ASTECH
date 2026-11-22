@@ -216,6 +216,7 @@ export const academyAPI = {
     apiRequest(`/api/academy/classes${buildQuery(filters)}`),
 
   // CONSULTAR ALUNOS DE UMA TURMA
+
   getClassRoster: (classId) =>
     apiRequest(
       `/api/academy/classes/${encodeURIComponent(classId)}/roster`
@@ -265,6 +266,17 @@ export const academyAPI = {
       `/api/academy/enrollments/${encodeURIComponent(enrollmentId)}/activate`,
       {
         method: "PATCH"
+      }
+    ),
+
+  // ACOMPANHAMENTO DO PROGRESSO
+
+  updateEnrollmentProgress: (enrollmentId, lessonId) =>
+    apiRequest(
+      `/api/academy/enrollments/${encodeURIComponent(enrollmentId)}/progress`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ lessonId })
       }
     ),
 
