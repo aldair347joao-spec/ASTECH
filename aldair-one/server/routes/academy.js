@@ -1194,11 +1194,15 @@ router.post(
         timezone: classItem.timezone || "Africa/Luanda",
         status: "scheduled",
         recording: {
-          enabled: isAdmin(req.user) && recordingEnabled === true,
-          status: recordingEnabled === true && isAdmin(req.user)
-            ? "not_started"
-            : "disabled"
-        },
+  enabled:
+    (isAdmin(req.user) || isInstructor(req.user)) &&
+    recordingEnabled === true,
+  status:
+    recordingEnabled === true &&
+    (isAdmin(req.user) || isInstructor(req.user))
+      ? "not_started"
+      : "disabled"
+},
         createdBy: req.user._id
       });
 
