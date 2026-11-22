@@ -1,7 +1,10 @@
 
 import { Router } from "express";
 import express from "express";
-import { WebhookReceiver } from "livekit-server-sdk";
+import {
+  WebhookReceiver,
+  RoomServiceClient
+} from "livekit-server-sdk";
 
 import LiveSession from "../models/LiveSession.js";
 
@@ -18,6 +21,45 @@ function getWebhookReceiver() {
   return new WebhookReceiver(apiKey, apiSecret);
 }
 
+function getRoomService() {
+  const {
+    LIVEKIT_URL,
+    LIVEKIT_API_KEY,
+    LIVEKIT_API_SECRET
+  } = process.env;
+
+  if (!LIVEKIT_URL || !LIVEKIT_API_KEY || !LIVEKIT_API_SECRET) {
+    throw new Error("Credenciais LiveKit não configuradas.");
+  }
+
+  return new RoomServiceClient(
+    LIVEKIT_URL,
+    LIVEKIT_API_KEY,
+    LIVEKIT_API_SECRET
+  );
+}
+
+async function closeSessionRoom(session) {
+  const roomService = getRoomService();
+
+  const rooms = await roomService.listRooms([
+    session.roomName
+  ]);
+
+  const roomExists = rooms.some(
+    room => room.name === session.roomName
+  );
+
+  if (roomExists) {
+    await roomService.deleteRoom(session.roomName);
+  }
+
+  session.status = "completed";
+  session.actualEnd = session.actualEnd || new Date();
+
+  await session.save();
+}
+
 // ==========================================
 // RECEBER EVENTOS DO LIVEKIT
 // ==========================================
@@ -29,6 +71,8 @@ router.post(
     limit: "2mb"
   }),
   async (req, res) => {
+    let event;
+
     try {
       if (!Buffer.isBuffer(req.body)) {
         return res.status(400).json({
@@ -48,11 +92,23 @@ router.post(
 
       const receiver = getWebhookReceiver();
 
-      const event = await receiver.receive(
+      event = await receiver.receive(
         req.body,
         authorization
       );
+    } catch (error) {
+      console.error(
+        "Falha na validação do webhook LiveKit:",
+        error.message
+      );
 
+      return res.status(401).json({
+        success: false,
+        message: "Não foi possível validar o webhook."
+      });
+    }
+
+    try {
       if (event.event !== "egress_ended") {
         return res.status(200).json({
           success: true,
@@ -85,7 +141,8 @@ router.post(
       // EGRESS_COMPLETE = 3
       if (status === 3) {
         session.recording.status = "completed";
-        session.recording.completedAt = new Date();
+        session.recording.completedAt =
+          session.recording.completedAt || new Date();
 
         await session.save();
 
@@ -93,17 +150,12 @@ router.post(
           "Gravação concluída:",
           egressInfo.egressId
         );
-
-        return res.status(200).json({
-          success: true,
-          message: "Gravação concluída com sucesso."
-        });
       }
 
       // EGRESS_FAILED = 4
       // EGRESS_ABORTED = 5
       // EGRESS_LIMIT_REACHED = 6
-      if ([4, 5, 6].includes(status)) {
+      else if ([4, 5, 6].includes(status)) {
         session.recording.status = "failed";
 
         await session.save();
@@ -113,26 +165,44 @@ router.post(
           egressInfo.egressId,
           egressInfo.error || "Erro não especificado."
         );
-
+      } else {
         return res.status(200).json({
           success: true,
-          message: "Falha da gravação registada."
+          message: "Estado Egress recebido."
         });
+      }
+
+      // Se o formador pediu para terminar a aula,
+      // encerramos a sala depois do estado final do Egress.
+      if (
+        session.recording.endSessionRequested === true &&
+        session.status === "live"
+      ) {
+        await closeSessionRoom(session);
+
+        console.log(
+          "Sala encerrada após finalização do Egress:",
+          session.roomName
+        );
       }
 
       return res.status(200).json({
         success: true,
-        message: "Estado Egress recebido."
+        message: session.recording.status === "completed"
+          ? "Gravação concluída e processada."
+          : "Falha da gravação registada."
       });
     } catch (error) {
       console.error(
-        "Erro no webhook LiveKit:",
+        "Erro ao processar evento Egress:",
         error.message
       );
 
-      return res.status(401).json({
+      // Erro interno: permite ao LiveKit tentar entregar
+      // novamente o webhook.
+      return res.status(500).json({
         success: false,
-        message: "Não foi possível validar o webhook."
+        message: "Não foi possível processar o evento Egress."
       });
     }
   }
