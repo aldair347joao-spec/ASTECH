@@ -46,7 +46,6 @@ export async function apiRequest(path, options = {}) {
   }
 
   const contentType = response.headers.get("content-type") || "";
-
   let data;
 
   if (contentType.includes("application/json")) {
@@ -78,10 +77,7 @@ export const authAPI = {
       body: JSON.stringify(userData)
     });
 
-    if (data.token) {
-      saveToken(data.token);
-    }
-
+    if (data.token) saveToken(data.token);
     return data;
   },
 
@@ -91,14 +87,22 @@ export const authAPI = {
       body: JSON.stringify(credentials)
     });
 
-    if (data.token) {
-      saveToken(data.token);
-    }
-
+    if (data.token) saveToken(data.token);
     return data;
   },
 
   me: () => apiRequest("/api/auth/me"),
+
+  requestSuperAdminCode: () =>
+    apiRequest("/api/auth/setup/super-admin/request-code", {
+      method: "POST"
+    }),
+
+  verifySuperAdminCode: (code) =>
+    apiRequest("/api/auth/setup/super-admin/verify-code", {
+      method: "POST",
+      body: JSON.stringify({ code })
+    }),
 
   logout: () => {
     clearToken();
