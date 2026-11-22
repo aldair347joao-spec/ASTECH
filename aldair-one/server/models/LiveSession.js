@@ -139,6 +139,11 @@ const liveSessionSchema = new mongoose.Schema(
         default: null
       },
 
+      recordingKey: {
+        type: String,
+        default: null
+      },
+
       startedAt: {
         type: Date,
         default: null
