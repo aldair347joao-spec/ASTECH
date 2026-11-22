@@ -215,8 +215,6 @@ export const academyAPI = {
   getClasses: (filters = {}) =>
     apiRequest(`/api/academy/classes${buildQuery(filters)}`),
 
-  // CONSULTAR ALUNOS DE UMA TURMA
-
   getClassRoster: (classId) =>
     apiRequest(
       `/api/academy/classes/${encodeURIComponent(classId)}/roster`
@@ -269,7 +267,7 @@ export const academyAPI = {
       }
     ),
 
-  // ACOMPANHAMENTO DO PROGRESSO
+  // PROGRESSO
 
   updateEnrollmentProgress: (enrollmentId, lessonId) =>
     apiRequest(
@@ -299,7 +297,7 @@ export const academyAPI = {
 // ==========================================
 
 export const livekitAPI = {
-  // INICIAR A AULA ONLINE
+  // INICIAR A AULA
   startSession: (sessionId) =>
     apiRequest(
       `/api/livekit/sessions/${encodeURIComponent(sessionId)}/start`,
@@ -308,7 +306,7 @@ export const livekitAPI = {
       }
     ),
 
-  // GERAR ACESSO INDIVIDUAL À SALA
+  // GERAR TOKEN DE ACESSO
   getAccessToken: (sessionId) =>
     apiRequest(
       `/api/livekit/sessions/${encodeURIComponent(sessionId)}/token`,
@@ -317,12 +315,40 @@ export const livekitAPI = {
       }
     ),
 
-  // TERMINAR A AULA ONLINE
+  // TERMINAR A AULA
   endSession: (sessionId) =>
     apiRequest(
       `/api/livekit/sessions/${encodeURIComponent(sessionId)}/end`,
       {
         method: "POST"
+      }
+    ),
+
+  // CONSULTAR PARTICIPANTES
+  getParticipants: (sessionId) =>
+    apiRequest(
+      `/api/livekit/sessions/${encodeURIComponent(sessionId)}/participants`
+    ),
+
+  // SILENCIAR OU REATIVAR MICROFONE
+  muteParticipant: (sessionId, identity, trackSid, muted) =>
+    apiRequest(
+      `/api/livekit/sessions/${encodeURIComponent(sessionId)}/participants/${encodeURIComponent(identity)}/mute`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          trackSid,
+          muted
+        })
+      }
+    ),
+
+  // REMOVER PARTICIPANTE
+  removeParticipant: (sessionId, identity) =>
+    apiRequest(
+      `/api/livekit/sessions/${encodeURIComponent(sessionId)}/participants/${encodeURIComponent(identity)}`,
+      {
+        method: "DELETE"
       }
     )
 };
