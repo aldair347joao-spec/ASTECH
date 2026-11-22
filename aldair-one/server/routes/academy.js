@@ -310,7 +310,7 @@ router.patch(
 
       return res.status(500).json({
         success: false,
-        message: "Não foi possível alterar o estado do curso."
+        message: "Não foi possível alterar o curso."
       });
     }
   }
@@ -352,6 +352,108 @@ router.get("/classes", async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Não foi possível carregar as turmas."
+    });
+  }
+});
+
+// ==========================================
+// GESTÃO DE ALUNOS DA TURMA
+// ==========================================
+
+// Consultar lista de alunos e inscrições de uma turma
+router.get("/classes/:id/roster", async (req, res) => {
+  try {
+    const classId = req.params.id;
+
+    if (!validId(classId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Identificador de turma inválido."
+      });
+    }
+
+    const classItem = await ClassModel.findById(classId)
+      .populate("course", "title category level")
+      .populate("instructor", "name email")
+      .lean();
+
+    if (!classItem) {
+      return res.status(404).json({
+        success: false,
+        message: "Turma não encontrada."
+      });
+    }
+
+    const instructorId =
+      classItem.instructor?._id?.toString();
+
+    if (
+      !isAdmin(req.user) &&
+      (
+        !isInstructor(req.user) ||
+        instructorId !== req.user._id.toString()
+      )
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Não tens autorização para consultar esta turma."
+      });
+    }
+
+    const enrollments = await Enrollment.find({
+      class: classId
+    })
+      .populate("student", "name email")
+      .sort({ enrolledAt: -1 })
+      .lean();
+
+    const activeEnrollments = enrollments.filter(
+      item => item.status === "active"
+    );
+
+    const pendingEnrollments = enrollments.filter(
+      item => item.status === "pending"
+    );
+
+    const completedEnrollments = enrollments.filter(
+      item => item.status === "completed"
+    );
+
+    const cancelledEnrollments = enrollments.filter(
+      item => item.status === "cancelled"
+    );
+
+    return res.json({
+      success: true,
+
+      class: {
+        ...classItem,
+
+        statistics: {
+          capacity: classItem.capacity,
+          active: activeEnrollments.length,
+          pending: pendingEnrollments.length,
+          completed: completedEnrollments.length,
+          cancelled: cancelledEnrollments.length,
+          available: Math.max(
+            0,
+            classItem.capacity - activeEnrollments.length
+          )
+        }
+      },
+
+      enrollments
+    });
+
+  } catch (error) {
+    console.error(
+      "Erro ao consultar alunos da turma:",
+      error.message
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Não foi possível carregar os alunos da turma."
     });
   }
 });
