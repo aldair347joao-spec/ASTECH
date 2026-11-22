@@ -267,6 +267,13 @@ router.post("/sessions/:id/recording/start", async (req, res) => {
       });
     }
 
+    if (session.recording.endSessionRequested === true) {
+      return res.status(409).json({
+        success: false,
+        message: "O encerramento desta aula já foi solicitado."
+      });
+    }
+
     if (
       session.recording.status === "recording" &&
       session.recording.egressId
@@ -308,6 +315,9 @@ router.post("/sessions/:id/recording/start", async (req, res) => {
         _id: session._id,
         status: "live",
         "recording.enabled": true,
+        "recording.endSessionRequested": {
+          $ne: true
+        },
         "recording.status": {
           $in: ["not_started", "failed"]
         }
@@ -383,8 +393,6 @@ router.post("/sessions/:id/recording/start", async (req, res) => {
   } catch (error) {
     console.error("Erro ao iniciar gravação:", error.message);
 
-    // Se o Egress iniciou mas houve falha ao guardar os dados,
-    // tenta interrompê-lo para evitar uma gravação sem controlo.
     if (startedEgressId) {
       try {
         const egressClient = getEgressClient();
@@ -591,18 +599,55 @@ router.post("/sessions/:id/end", async (req, res) => {
       });
     }
 
-    // Nesta etapa ainda não encerramos Egress.
-    // A finalização segura da gravação será integrada na próxima etapa.
-    if (
-      session.recording?.status === "recording" ||
-      session.recording?.status === "pending"
-    ) {
+    // Se o Egress ainda está a iniciar, não encerramos a sala.
+    if (session.recording?.status === "pending") {
       return res.status(409).json({
         success: false,
-        message: "A gravação ainda precisa de ser finalizada antes de terminar a aula."
+        message: "A gravação ainda está a iniciar. Aguarda alguns segundos e tenta novamente."
       });
     }
 
+    // Se existe uma gravação ativa, solicitamos a sua paragem.
+    if (session.recording?.status === "recording") {
+      if (!session.recording.egressId) {
+        return res.status(409).json({
+          success: false,
+          message: "O identificador da gravação ainda não está disponível."
+        });
+      }
+
+      session.recording.endSessionRequested = true;
+
+      await session.save();
+
+      try {
+        const egressClient = getEgressClient();
+
+        await egressClient.stopEgress(
+          session.recording.egressId
+        );
+
+        return res.status(202).json({
+          success: true,
+          pending: true,
+          message: "Pedido de finalização enviado. A aula será encerrada depois da confirmação da gravação."
+        });
+      } catch (error) {
+        console.error(
+          "Erro ao solicitar finalização Egress:",
+          error.message
+        );
+
+        return res.status(502).json({
+          success: false,
+          pending: true,
+          message: "Não foi possível confirmar a paragem da gravação. Podes tentar novamente."
+        });
+      }
+    }
+
+    // Se o Egress já terminou ou não foi iniciado,
+    // encerramos a sala diretamente.
     const roomService = getRoomService();
 
     const rooms = await roomService.listRooms([
@@ -634,7 +679,10 @@ router.post("/sessions/:id/end", async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("Erro ao terminar aula LiveKit:", error.message);
+    console.error(
+      "Erro ao terminar aula LiveKit:",
+      error.message
+    );
 
     return res.status(500).json({
       success: false,
