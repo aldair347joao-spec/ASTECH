@@ -9,6 +9,7 @@ import {
 import LiveSession from "../models/LiveSession.js";
 import ClassModel from "../models/Class.js";
 import Enrollment from "../models/Enrollment.js";
+import User from "../models/User.js";
 
 import { authenticate } from "../middleware/auth.js";
 
@@ -61,7 +62,13 @@ function getRoomService() {
   );
 }
 
-// Verificar sessão e permissões de gestão.
+function isAudioTrack(track) {
+  return (
+    track.type === 0 ||
+    String(track.type).toUpperCase() === "AUDIO"
+  );
+}
+
 async function getManagedLiveSession(req, res) {
   const sessionId = req.params.id;
 
@@ -265,7 +272,7 @@ router.post("/sessions/:id/token", async (req, res) => {
       {
         identity,
         name: participantName,
-        ttl: "1h"
+        ttl: "5m"
       }
     );
 
@@ -349,6 +356,27 @@ router.post("/sessions/:id/end", async (req, res) => {
       });
     }
 
+    if (!credentialsConfigured()) {
+      return res.status(503).json({
+        success: false,
+        message: "O serviço LiveKit não está configurado."
+      });
+    }
+
+    const roomService = getRoomService();
+
+    const rooms = await roomService.listRooms([
+      session.roomName
+    ]);
+
+    const roomExists = rooms.some(
+      room => room.name === session.roomName
+    );
+
+    if (roomExists) {
+      await roomService.deleteRoom(session.roomName);
+    }
+
     session.status = "completed";
     session.actualEnd = new Date();
 
@@ -356,7 +384,7 @@ router.post("/sessions/:id/end", async (req, res) => {
 
     return res.json({
       success: true,
-      message: "A aula online foi terminada.",
+      message: "A aula online foi terminada e a sala foi encerrada.",
       session: {
         id: session._id,
         title: session.title,
@@ -394,11 +422,11 @@ router.get("/sessions/:id/participants", async (req, res) => {
     return res.json({
       success: true,
       count: participants.length,
-      participants: participants.map((participant) => ({
+      participants: participants.map(participant => ({
         identity: participant.identity,
         name: participant.name,
         state: participant.state,
-        tracks: (participant.tracks || []).map((track) => ({
+        tracks: (participant.tracks || []).map(track => ({
           sid: track.sid,
           type: track.type,
           source: track.source,
@@ -435,6 +463,7 @@ router.post(
       if (
         !identity ||
         identity.length > 128 ||
+        !validId(identity) ||
         !trackSid ||
         typeof trackSid !== "string" ||
         trackSid.length > 128 ||
@@ -449,7 +478,16 @@ router.post(
       if (identity === req.user._id.toString()) {
         return res.status(400).json({
           success: false,
-          message: "Não podes moderar o teu próprio microfone por esta operação."
+          message: "Não podes moderar o teu próprio microfone."
+        });
+      }
+
+      const targetUser = await User.findById(identity).select("role");
+
+      if (!targetUser || targetUser.role !== "student") {
+        return res.status(403).json({
+          success: false,
+          message: "Só é permitido moderar o microfone de alunos."
         });
       }
 
@@ -460,11 +498,13 @@ router.post(
         identity
       );
 
-      const trackExists = (participant.tracks || []).some(
-        (track) => track.sid === trackSid
+      const audioTrackExists = (participant.tracks || []).some(
+        track =>
+          track.sid === trackSid &&
+          isAudioTrack(track)
       );
 
-      if (!trackExists) {
+      if (!audioTrackExists) {
         return res.status(404).json({
           success: false,
           message: "A faixa de áudio indicada não foi encontrada."
@@ -513,7 +553,11 @@ router.delete(
 
       const { identity } = req.params;
 
-      if (!identity || identity.length > 128) {
+      if (
+        !identity ||
+        identity.length > 128 ||
+        !validId(identity)
+      ) {
         return res.status(400).json({
           success: false,
           message: "Identidade do participante inválida."
@@ -523,7 +567,16 @@ router.delete(
       if (identity === req.user._id.toString()) {
         return res.status(400).json({
           success: false,
-          message: "Não podes remover a tua própria ligação por esta operação."
+          message: "Não podes remover a tua própria ligação."
+        });
+      }
+
+      const targetUser = await User.findById(identity).select("role");
+
+      if (!targetUser || targetUser.role !== "student") {
+        return res.status(403).json({
+          success: false,
+          message: "Só é permitido remover alunos desta aula."
         });
       }
 
@@ -536,7 +589,7 @@ router.delete(
 
       return res.json({
         success: true,
-        message: "Participante removido da aula."
+        message: "Aluno removido da sala. Poderá voltar a entrar se continuar autorizado."
       });
     } catch (error) {
       console.error("Erro ao remover participante:", error.message);
