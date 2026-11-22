@@ -94,6 +94,19 @@ export const authAPI = {
     return data;
   },
 
+  activateSuperAdmin: async (setupKey) => {
+    const data = await apiRequest(
+      "/api/auth/setup/super-admin/activate",
+      {
+        method: "POST",
+        body: JSON.stringify({ setupKey })
+      }
+    );
+
+    if (data.token) saveToken(data.token);
+    return data;
+  },
+
   login: async (credentials) => {
     const data = await apiRequest("/api/auth/login", {
       method: "POST",
@@ -105,17 +118,6 @@ export const authAPI = {
   },
 
   me: () => apiRequest("/api/auth/me"),
-
-  requestSuperAdminCode: () =>
-    apiRequest("/api/auth/setup/super-admin/request-code", {
-      method: "POST"
-    }),
-
-  verifySuperAdminCode: (code) =>
-    apiRequest("/api/auth/setup/super-admin/verify-code", {
-      method: "POST",
-      body: JSON.stringify({ code })
-    }),
 
   logout: () => {
     clearToken();
