@@ -20,6 +20,7 @@ import {
 
 import { authAPI } from "../services/api";
 import AdminPanel from "./AdminPanel";
+import Academy from "./Academy";
 import "./Dashboard.css";
 
 const SUPER_ADMIN_EMAIL = "aldair347joao@gmail.com";
@@ -240,41 +241,10 @@ function Dashboard({ user, onLogout }) {
         );
 
       case "academy":
-        return (
-          <section className="dashboard-panel">
-            <GraduationCap size={32} />
-            <h2>ALDAIR ONE Academy</h2>
-
-            <p className="dashboard-muted">
-              Aqui poderás acompanhar os teus cursos, inscrições,
-              materiais de aprendizagem e certificados.
-            </p>
-
-            <div className="dashboard-empty">
-              <GraduationCap size={28} />
-              <strong>A tua área de formação</strong>
-              <span>Os teus cursos serão apresentados aqui.</span>
-            </div>
-          </section>
-        );
+        return <Academy user={currentUser} />;
 
       case "classes":
-        return (
-          <section className="dashboard-panel">
-            <Video size={32} />
-            <h2>Aulas online</h2>
-
-            <p className="dashboard-muted">
-              Acede às salas de videoconferência e acompanha as tuas aulas.
-            </p>
-
-            <div className="dashboard-empty">
-              <Video size={28} />
-              <strong>Nenhuma sala disponível</strong>
-              <span>As salas às quais tiveres acesso aparecerão aqui.</span>
-            </div>
-          </section>
-        );
+        return <Academy user={currentUser} />;
 
       case "services":
         return (
