@@ -2,10 +2,19 @@
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
 import jwt from "jsonwebtoken";
+import {
+  createHash,
+  randomInt,
+  timingSafeEqual
+} from "node:crypto";
+
 import User from "../models/User.js";
 import { authenticate } from "../middleware/auth.js";
+import { sendAdminVerificationEmail } from "../config/mailer.js";
 
 const router = Router();
+
+const SUPER_ADMIN_EMAIL = "aldair347joao@gmail.com";
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -15,6 +24,28 @@ const authLimiter = rateLimit({
   message: {
     success: false,
     message: "Demasiadas tentativas. Tenta novamente mais tarde."
+  }
+});
+
+const adminRequestLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 3,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Limite de pedidos de códigos atingido. Tenta mais tarde."
+  }
+});
+
+const adminVerifyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Demasiadas tentativas de confirmação."
   }
 });
 
@@ -30,7 +61,11 @@ function generateToken(user) {
   );
 }
 
-// Registo público
+function hashCode(code) {
+  return createHash("sha256").update(code).digest("hex");
+}
+
+// Registo público: nunca permite criar administradores.
 router.post("/register", authLimiter, async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -48,6 +83,13 @@ router.post("/register", authLimiter, async (req, res) => {
 
     const cleanName = name.trim();
     const cleanEmail = email.trim().toLowerCase();
+
+    if (cleanEmail === SUPER_ADMIN_EMAIL) {
+      return res.status(403).json({
+        success: false,
+        message: "Este endereço está reservado para a conta principal. Inicia sessão na conta existente."
+      });
+    }
 
     if (cleanName.length < 2 || cleanName.length > 100) {
       return res.status(400).json({
@@ -165,6 +207,191 @@ router.post("/login", authLimiter, async (req, res) => {
     });
   }
 });
+
+// Pedir código de verificação para a conta principal
+router.post(
+  "/setup/super-admin/request-code",
+  authenticate,
+  adminRequestLimiter,
+  async (req, res) => {
+    try {
+      if (req.user.email !== SUPER_ADMIN_EMAIL) {
+        return res.status(403).json({
+          success: false,
+          message: "Esta conta não está autorizada a solicitar a configuração principal."
+        });
+      }
+
+      if (req.user.role === "super_admin") {
+        return res.json({
+          success: true,
+          message: "Esta conta já é Super Administrador."
+        });
+      }
+
+      const existingSuperAdmin = await User.findOne({
+        role: "super_admin"
+      });
+
+      if (existingSuperAdmin) {
+        return res.status(409).json({
+          success: false,
+          message: "Já existe uma conta principal configurada."
+        });
+      }
+
+      const code = String(randomInt(100000, 1000000));
+
+      const user = await User.findById(req.user._id).select(
+        "+adminVerificationCodeHash +adminVerificationExpiresAt"
+      );
+
+      user.adminVerificationCodeHash = hashCode(code);
+      user.adminVerificationExpiresAt = new Date(
+        Date.now() + 10 * 60 * 1000
+      );
+
+      await user.save();
+
+      try {
+        await sendAdminVerificationEmail(SUPER_ADMIN_EMAIL, code);
+      } catch (mailError) {
+        user.adminVerificationCodeHash = undefined;
+        user.adminVerificationExpiresAt = undefined;
+        await user.save();
+
+        console.error("Falha no envio do código:", mailError.message);
+
+        return res.status(503).json({
+          success: false,
+          message: "Não foi possível enviar o código. Verifica a configuração de e-mail do servidor."
+        });
+      }
+
+      return res.json({
+        success: true,
+        message: "Código de segurança enviado para o teu endereço de e-mail."
+      });
+    } catch (error) {
+      console.error("Erro ao pedir código:", error.message);
+
+      return res.status(500).json({
+        success: false,
+        message: "Não foi possível iniciar a verificação."
+      });
+    }
+  }
+);
+
+// Confirmar código e activar a conta principal
+router.post(
+  "/setup/super-admin/verify-code",
+  authenticate,
+  adminVerifyLimiter,
+  async (req, res) => {
+    try {
+      if (req.user.email !== SUPER_ADMIN_EMAIL) {
+        return res.status(403).json({
+          success: false,
+          message: "Conta não autorizada."
+        });
+      }
+
+      const { code } = req.body;
+
+      if (typeof code !== "string" || !/^\d{6}$/.test(code)) {
+        return res.status(400).json({
+          success: false,
+          message: "Introduz o código de seis dígitos."
+        });
+      }
+
+      const user = await User.findById(req.user._id).select(
+        "+adminVerificationCodeHash +adminVerificationExpiresAt"
+      );
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "Conta não encontrada."
+        });
+      }
+
+      if (user.role === "super_admin") {
+        return res.json({
+          success: true,
+          message: "Esta conta já é Super Administrador."
+        });
+      }
+
+      if (
+        !user.adminVerificationCodeHash ||
+        !user.adminVerificationExpiresAt ||
+        user.adminVerificationExpiresAt.getTime() < Date.now()
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Código inexistente ou expirado. Solicita um novo código."
+        });
+      }
+
+      const submittedHash = Buffer.from(hashCode(code), "hex");
+      const storedHash = Buffer.from(
+        user.adminVerificationCodeHash,
+        "hex"
+      );
+
+      if (
+        submittedHash.length !== storedHash.length ||
+        !timingSafeEqual(submittedHash, storedHash)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Código de segurança incorrecto."
+        });
+      }
+
+      const existingSuperAdmin = await User.findOne({
+        role: "super_admin",
+        _id: { $ne: user._id }
+      });
+
+      if (existingSuperAdmin) {
+        return res.status(409).json({
+          success: false,
+          message: "Já existe outra conta principal configurada."
+        });
+      }
+
+      user.role = "super_admin";
+      user.adminVerifiedAt = new Date();
+      user.adminVerificationCodeHash = undefined;
+      user.adminVerificationExpiresAt = undefined;
+
+      await user.save();
+
+      return res.json({
+        success: true,
+        message: "Conta principal activada com sucesso.",
+        user
+      });
+    } catch (error) {
+      console.error("Erro na confirmação:", error.message);
+
+      if (error.code === 11000) {
+        return res.status(409).json({
+          success: false,
+          message: "Já existe uma conta principal configurada."
+        });
+      }
+
+      return res.status(500).json({
+        success: false,
+        message: "Não foi possível confirmar a conta principal."
+      });
+    }
+  }
+);
 
 // Obter utilizador autenticado
 router.get("/me", authenticate, (req, res) => {
