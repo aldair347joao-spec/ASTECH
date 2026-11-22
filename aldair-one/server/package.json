@@ -19,6 +19,7 @@
     "express-rate-limit": "^7.5.0",
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
+    "livekit-server-sdk": "^2.20.1",
     "mongoose": "^8.9.5",
     "nodemailer": "^7.0.3"
   }
