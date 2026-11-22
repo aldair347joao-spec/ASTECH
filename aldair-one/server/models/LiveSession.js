@@ -152,6 +152,11 @@ const liveSessionSchema = new mongoose.Schema(
       completedAt: {
         type: Date,
         default: null
+      },
+
+      endSessionRequested: {
+        type: Boolean,
+        default: false
       }
     },
 
