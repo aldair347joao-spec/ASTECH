@@ -1,41 +1,37 @@
 
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
-const LiveSessionSchema = new mongoose.Schema(
+const liveSessionSchema = new mongoose.Schema(
   {
     title: {
       type: String,
       required: true,
       trim: true,
-      maxlength: 200
+      maxlength: 180
     },
 
     description: {
       type: String,
       trim: true,
-      maxlength: 3000,
       default: ""
     },
 
     course: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Course",
-      required: true,
-      index: true
+      default: null
     },
 
     class: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Class",
-      required: true,
-      index: true
+      default: null
     },
 
     instructor: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
-      index: true
+      required: true
     },
 
     provider: {
@@ -48,14 +44,13 @@ const LiveSessionSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
-      trim: true,
-      immutable: true
+      immutable: true,
+      trim: true
     },
 
     scheduledStart: {
       type: Date,
-      required: true,
-      index: true
+      required: true
     },
 
     scheduledEnd: {
@@ -75,8 +70,7 @@ const LiveSessionSchema = new mongoose.Schema(
 
     timezone: {
       type: String,
-      default: "Africa/Luanda",
-      trim: true
+      default: "Africa/Luanda"
     },
 
     status: {
@@ -87,8 +81,7 @@ const LiveSessionSchema = new mongoose.Schema(
         "completed",
         "cancelled"
       ],
-      default: "scheduled",
-      index: true
+      default: "scheduled"
     },
 
     recording: {
@@ -101,9 +94,8 @@ const LiveSessionSchema = new mongoose.Schema(
         type: String,
         enum: [
           "disabled",
-          "not_started",
+          "pending",
           "recording",
-          "processing",
           "completed",
           "failed"
         ],
@@ -157,7 +149,6 @@ const LiveSessionSchema = new mongoose.Schema(
     cancellationReason: {
       type: String,
       trim: true,
-      maxlength: 1000,
       default: ""
     }
   },
@@ -166,22 +157,7 @@ const LiveSessionSchema = new mongoose.Schema(
   }
 );
 
-LiveSessionSchema.index({
-  class: 1,
-  scheduledStart: 1
-});
-
-LiveSessionSchema.index({
-  instructor: 1,
-  status: 1
-});
-
-LiveSessionSchema.index({
-  status: 1,
-  scheduledStart: 1
-});
-
-LiveSessionSchema.pre("validate", function (next) {
+liveSessionSchema.pre("validate", function () {
   if (
     this.scheduledStart &&
     this.scheduledEnd &&
@@ -192,10 +168,25 @@ LiveSessionSchema.pre("validate", function (next) {
       "A hora de término deve ser posterior à hora de início."
     );
   }
-
-  next();
 });
 
-module.exports =
+liveSessionSchema.index({
+  class: 1,
+  scheduledStart: 1
+});
+
+liveSessionSchema.index({
+  instructor: 1,
+  scheduledStart: 1
+});
+
+liveSessionSchema.index({
+  status: 1,
+  scheduledStart: 1
+});
+
+const LiveSession =
   mongoose.models.LiveSession ||
-  mongoose.model("LiveSession", LiveSessionSchema);
+  mongoose.model("LiveSession", liveSessionSchema);
+
+export default LiveSession;
