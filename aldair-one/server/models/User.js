@@ -31,6 +31,7 @@ const userSchema = new mongoose.Schema(
     role: {
       type: String,
       enum: [
+        "super_admin",
         "admin",
         "instructor",
         "student",
@@ -43,6 +44,21 @@ const userSchema = new mongoose.Schema(
     isActive: {
       type: Boolean,
       default: true
+    },
+
+    adminVerificationCodeHash: {
+      type: String,
+      select: false
+    },
+
+    adminVerificationExpiresAt: {
+      type: Date,
+      select: false
+    },
+
+    adminVerifiedAt: {
+      type: Date,
+      default: null
     }
   },
   {
@@ -63,10 +79,12 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-// Nunca devolver a palavra-passe nas respostas JSON
+// Nunca devolver dados sensíveis nas respostas JSON
 userSchema.set("toJSON", {
   transform: function (doc, ret) {
     delete ret.password;
+    delete ret.adminVerificationCodeHash;
+    delete ret.adminVerificationExpiresAt;
     return ret;
   }
 });
