@@ -1,9 +1,14 @@
 
 import { Router } from "express";
 import mongoose from "mongoose";
+
 import {
   AccessToken,
-  RoomServiceClient
+  RoomServiceClient,
+  EgressClient,
+  EncodedFileOutput,
+  EncodedFileType,
+  S3Upload
 } from "livekit-server-sdk";
 
 import LiveSession from "../models/LiveSession.js";
@@ -50,12 +55,33 @@ function credentialsConfigured() {
   );
 }
 
+function r2CredentialsConfigured() {
+  return Boolean(
+    process.env.R2_ACCOUNT_ID &&
+    process.env.R2_ACCESS_KEY_ID &&
+    process.env.R2_SECRET_ACCESS_KEY &&
+    process.env.R2_BUCKET_NAME
+  );
+}
+
 function getRoomService() {
   if (!credentialsConfigured()) {
     throw new Error("Credenciais LiveKit não configuradas.");
   }
 
   return new RoomServiceClient(
+    process.env.LIVEKIT_URL,
+    process.env.LIVEKIT_API_KEY,
+    process.env.LIVEKIT_API_SECRET
+  );
+}
+
+function getEgressClient() {
+  if (!credentialsConfigured()) {
+    throw new Error("Credenciais LiveKit não configuradas.");
+  }
+
+  return new EgressClient(
     process.env.LIVEKIT_URL,
     process.env.LIVEKIT_API_KEY,
     process.env.LIVEKIT_API_SECRET
@@ -77,6 +103,7 @@ async function getManagedLiveSession(req, res) {
       success: false,
       message: "Identificador da aula inválido."
     });
+
     return null;
   }
 
@@ -87,14 +114,16 @@ async function getManagedLiveSession(req, res) {
       success: false,
       message: "Aula online não encontrada."
     });
+
     return null;
   }
 
   if (!canManageSession(req.user, session)) {
     res.status(403).json({
       success: false,
-      message: "Não tens autorização para gerir participantes."
+      message: "Não tens autorização para gerir esta aula."
     });
+
     return null;
   }
 
@@ -103,6 +132,7 @@ async function getManagedLiveSession(req, res) {
       success: false,
       message: "A aula não está em direto."
     });
+
     return null;
   }
 
@@ -185,6 +215,204 @@ router.post("/sessions/:id/start", async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Não foi possível iniciar a aula online."
+    });
+  }
+});
+
+// ==========================================
+// INICIAR GRAVAÇÃO MP4
+// ==========================================
+
+router.post("/sessions/:id/recording/start", async (req, res) => {
+  let claimedSession = null;
+  let startedEgressId = null;
+
+  try {
+    const sessionId = req.params.id;
+
+    if (!validId(sessionId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Identificador da aula inválido."
+      });
+    }
+
+    const session = await LiveSession.findById(sessionId);
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        message: "Aula online não encontrada."
+      });
+    }
+
+    if (!canManageSession(req.user, session)) {
+      return res.status(403).json({
+        success: false,
+        message: "Não tens autorização para gravar esta aula."
+      });
+    }
+
+    if (session.status !== "live") {
+      return res.status(400).json({
+        success: false,
+        message: "A aula ainda não está em direto."
+      });
+    }
+
+    if (!session.recording?.enabled) {
+      return res.status(403).json({
+        success: false,
+        message: "A gravação não foi autorizada para esta aula."
+      });
+    }
+
+    if (
+      session.recording.status === "recording" &&
+      session.recording.egressId
+    ) {
+      return res.json({
+        success: true,
+        message: "A gravação já está em andamento.",
+        recording: {
+          status: session.recording.status,
+          egressId: session.recording.egressId
+        }
+      });
+    }
+
+    if (session.recording.status === "pending") {
+      return res.status(409).json({
+        success: false,
+        message: "O início da gravação já está a ser processado."
+      });
+    }
+
+    if (!r2CredentialsConfigured()) {
+      return res.status(503).json({
+        success: false,
+        message: "O armazenamento de gravações não está configurado."
+      });
+    }
+
+    if (!credentialsConfigured()) {
+      return res.status(503).json({
+        success: false,
+        message: "O serviço LiveKit não está configurado."
+      });
+    }
+
+    // Reserva o início da gravação para evitar pedidos duplicados.
+    claimedSession = await LiveSession.findOneAndUpdate(
+      {
+        _id: session._id,
+        status: "live",
+        "recording.enabled": true,
+        "recording.status": {
+          $in: ["not_started", "failed"]
+        }
+      },
+      {
+        $set: {
+          "recording.status": "pending"
+        }
+      },
+      {
+        new: true
+      }
+    );
+
+    if (!claimedSession) {
+      return res.status(409).json({
+        success: false,
+        message: "A gravação já foi iniciada ou está a ser processada."
+      });
+    }
+
+    const recordingKey =
+      `recordings/${session._id}/${Date.now()}.mp4`;
+
+    const endpoint =
+      `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
+
+    const fileOutput = new EncodedFileOutput({
+      filepath: recordingKey,
+      fileType: EncodedFileType.MP4,
+      output: {
+        case: "s3",
+        value: new S3Upload({
+          accessKey: process.env.R2_ACCESS_KEY_ID,
+          secret: process.env.R2_SECRET_ACCESS_KEY,
+          bucket: process.env.R2_BUCKET_NAME,
+          region: process.env.R2_REGION || "auto",
+          endpoint,
+          forcePathStyle: true
+        })
+      }
+    });
+
+    const egressClient = getEgressClient();
+
+    const egressInfo = await egressClient.startRoomCompositeEgress(
+      session.roomName,
+      {
+        file: fileOutput
+      }
+    );
+
+    startedEgressId = egressInfo.egressId;
+
+    claimedSession.recording.status = "recording";
+    claimedSession.recording.egressId = startedEgressId;
+    claimedSession.recording.recordingKey = recordingKey;
+    claimedSession.recording.recordingUrl = null;
+    claimedSession.recording.startedBy = req.user._id;
+    claimedSession.recording.startedAt = new Date();
+    claimedSession.recording.completedAt = null;
+
+    await claimedSession.save();
+
+    return res.json({
+      success: true,
+      message: "Gravação iniciada com sucesso.",
+      recording: {
+        status: claimedSession.recording.status,
+        egressId: claimedSession.recording.egressId
+      }
+    });
+  } catch (error) {
+    console.error("Erro ao iniciar gravação:", error.message);
+
+    // Se o Egress iniciou mas houve falha ao guardar os dados,
+    // tenta interrompê-lo para evitar uma gravação sem controlo.
+    if (startedEgressId) {
+      try {
+        const egressClient = getEgressClient();
+        await egressClient.stopEgress(startedEgressId);
+      } catch (stopError) {
+        console.error(
+          "Não foi possível interromper Egress após erro:",
+          stopError.message
+        );
+      }
+    }
+
+    if (claimedSession) {
+      try {
+        claimedSession.recording.status = "failed";
+        claimedSession.recording.egressId = null;
+        await claimedSession.save();
+      } catch (saveError) {
+        console.error(
+          "Erro ao atualizar estado da gravação:",
+          saveError.message
+        );
+      }
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Não foi possível iniciar a gravação."
     });
   }
 });
@@ -360,6 +588,18 @@ router.post("/sessions/:id/end", async (req, res) => {
       return res.status(503).json({
         success: false,
         message: "O serviço LiveKit não está configurado."
+      });
+    }
+
+    // Nesta etapa ainda não encerramos Egress.
+    // A finalização segura da gravação será integrada na próxima etapa.
+    if (
+      session.recording?.status === "recording" ||
+      session.recording?.status === "pending"
+    ) {
+      return res.status(409).json({
+        success: false,
+        message: "A gravação ainda precisa de ser finalizada antes de terminar a aula."
       });
     }
 
