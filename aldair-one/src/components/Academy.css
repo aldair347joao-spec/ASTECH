@@ -1193,3 +1193,239 @@
     width: 100%;
   }
 }
+
+/* =========================================
+   STUDENT PROGRESS — PROGRESSO DO ALUNO
+========================================= */
+
+.student-progress {
+  width: 100%;
+  margin-top: 18px;
+  padding: 17px;
+  border: 1px solid rgba(96, 165, 250, 0.2);
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.65);
+}
+
+.student-progress-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.student-progress-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.student-progress-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  color: #60a5fa;
+  background: rgba(59, 130, 246, 0.13);
+}
+
+.student-progress-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.student-progress-info strong {
+  color: #f1f5f9;
+  font-size: 13px;
+}
+
+.student-progress-info span {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.student-progress-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 190px;
+  max-width: 360px;
+}
+
+.student-progress-bar {
+  height: 8px;
+  flex: 1;
+  overflow: hidden;
+  border-radius: 20px;
+  background: #273449;
+}
+
+.student-progress-bar-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2563eb, #38bdf8);
+  transition: width 0.3s ease;
+}
+
+.student-progress-action button,
+.student-progress-lesson button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 1px solid rgba(96, 165, 250, 0.25);
+  border-radius: 9px;
+  color: #bfdbfe;
+  background: rgba(37, 99, 235, 0.12);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.student-progress button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.student-progress-lessons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 17px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.student-progress-lessons-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: #e2e8f0;
+  font-size: 12px;
+}
+
+.student-progress-lessons-heading span {
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.student-progress-lesson {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 10px;
+  background: rgba(30, 41, 59, 0.55);
+}
+
+.student-progress-lesson-info {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+
+.student-progress-lesson-status {
+  display: flex;
+  flex-shrink: 0;
+  color: #64748b;
+}
+
+.student-progress-lesson:has(.student-progress-lesson-status svg) {
+  color: #e2e8f0;
+}
+
+.student-progress-lesson-info > div:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.student-progress-lesson-info strong {
+  color: #e2e8f0;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.student-progress-lesson-info span,
+.student-progress-lesson-info small {
+  color: #94a3b8;
+  font-size: 10px;
+}
+
+.student-progress-lesson button {
+  flex-shrink: 0;
+}
+
+.student-progress-lesson button.student-progress-completed {
+  color: #86efac;
+  border-color: rgba(34, 197, 94, 0.2);
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.student-progress-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  color: #fca5a5;
+  font-size: 12px;
+}
+
+.student-progress-loading,
+.student-progress-empty {
+  padding: 16px;
+  color: #94a3b8;
+  text-align: center;
+  font-size: 12px;
+}
+
+.student-progress-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+}
+
+.student-progress-spin {
+  animation: studentProgressSpin 1s linear infinite;
+}
+
+@keyframes studentProgressSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 600px) {
+  .student-progress-summary {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .student-progress-action {
+    max-width: none;
+    width: 100%;
+  }
+
+  .student-progress-lesson {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .student-progress-lesson button {
+    width: 100%;
+  }
+}
