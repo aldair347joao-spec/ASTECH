@@ -89,6 +89,18 @@ userSchema.set("toJSON", {
   }
 });
 
+
+userSchema.index(
+  { role: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      role: "super_admin"
+    },
+    name: "unique_super_admin"
+  }
+);
+
 const User = mongoose.model("User", userSchema);
 
 export default User;
