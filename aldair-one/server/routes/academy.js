@@ -826,6 +826,162 @@ router.get("/enrollments", async (req, res) => {
   }
 });
 
+// ==========================================
+// ACOMPANHAMENTO DO PROGRESSO DO ALUNO
+// ==========================================
+
+// Marcar uma aula como concluída no progresso do próprio aluno
+router.patch(
+  "/enrollments/:id/progress",
+  async (req, res) => {
+    try {
+      const { lessonId } = req.body;
+      const enrollmentId = req.params.id;
+
+      if (!validId(enrollmentId) || !validId(lessonId)) {
+        return res.status(400).json({
+          success: false,
+          message: "Identificador de inscrição ou aula inválido."
+        });
+      }
+
+      if (req.user.role !== "student") {
+        return res.status(403).json({
+          success: false,
+          message: "Apenas o próprio aluno pode atualizar o seu progresso."
+        });
+      }
+
+      const enrollment = await Enrollment.findById(enrollmentId);
+
+      if (!enrollment) {
+        return res.status(404).json({
+          success: false,
+          message: "Inscrição não encontrada."
+        });
+      }
+
+      if (enrollment.student.toString() !== req.user._id.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: "Não tens autorização para alterar esta inscrição."
+        });
+      }
+
+      if (enrollment.status !== "active") {
+        return res.status(400).json({
+          success: false,
+          message: "Só é possível atualizar o progresso de inscrições ativas."
+        });
+      }
+
+      const course = await Course.findById(enrollment.course)
+        .select("modules")
+        .lean();
+
+      if (!course) {
+        return res.status(404).json({
+          success: false,
+          message: "Curso associado à inscrição não encontrado."
+        });
+      }
+
+      const allLessons = (course.modules || []).flatMap(module =>
+        (module.lessons || []).map(lesson => ({
+          ...lesson,
+          moduleId: module._id
+        }))
+      );
+
+      const publishedLessons = allLessons.filter(
+        lesson => lesson.isPublished === true
+      );
+
+      const requestedLesson = publishedLessons.find(
+        lesson => lesson._id.toString() === lessonId
+      );
+
+      if (!requestedLesson) {
+        return res.status(404).json({
+          success: false,
+          message: "Aula não encontrada ou ainda não publicada."
+        });
+      }
+
+      if (publishedLessons.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Este curso ainda não tem aulas publicadas."
+        });
+      }
+
+      const validLessonIds = new Set(
+        publishedLessons.map(lesson => lesson._id.toString())
+      );
+
+      const completedIds = new Set(
+        (enrollment.progress?.completedLessons || [])
+          .map(id => id.toString())
+          .filter(id => validLessonIds.has(id))
+      );
+
+      completedIds.add(lessonId);
+
+      enrollment.progress.completedLessons = Array.from(
+        completedIds,
+        id => new mongoose.Types.ObjectId(id)
+      );
+
+      const totalLessons = publishedLessons.length;
+      const completedCount = completedIds.size;
+
+      enrollment.progress.percentage = Math.round(
+        (completedCount / totalLessons) * 100
+      );
+
+      enrollment.progress.lastAccessedAt = new Date();
+
+      if (!enrollment.startedAt) {
+        enrollment.startedAt = new Date();
+      }
+
+      if (completedCount === totalLessons) {
+        enrollment.progress.percentage = 100;
+        enrollment.status = "completed";
+
+        if (!enrollment.completedAt) {
+          enrollment.completedAt = new Date();
+        }
+      }
+
+      await enrollment.save();
+
+      return res.json({
+        success: true,
+        message: "Progresso atualizado com sucesso.",
+        progress: {
+          percentage: enrollment.progress.percentage,
+          completedLessons: completedCount,
+          totalLessons,
+          completed: enrollment.status === "completed",
+          lastAccessedAt: enrollment.progress.lastAccessedAt
+        },
+        enrollmentStatus: enrollment.status
+      });
+    } catch (error) {
+      console.error(
+        "Erro ao atualizar progresso do aluno:",
+        error.message
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Não foi possível atualizar o progresso."
+      });
+    }
+  }
+);
+
 // Confirmar pagamento e ativar inscrição
 router.patch(
   "/enrollments/:id/activate",
