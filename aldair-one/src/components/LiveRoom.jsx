@@ -9,16 +9,13 @@ import "@livekit/components-styles";
 import { livekitAPI } from "../services/api";
 import "./LiveRoom.css";
 
-function LiveRoom({
-  session,
-  canManage,
-  onClose,
-  onEnded
-}) {
+function LiveRoom({ session, canManage, onClose, onEnded }) {
   const [connection, setConnection] = useState(null);
   const [loading, setLoading] = useState(true);
   const [ending, setEnding] = useState(false);
   const [error, setError] = useState("");
+  const [disconnected, setDisconnected] = useState(false);
+  const [connectionAttempt, setConnectionAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -27,26 +24,31 @@ function LiveRoom({
       try {
         setLoading(true);
         setError("");
+        setDisconnected(false);
 
         if (canManage && session.status === "scheduled") {
           await livekitAPI.startSession(session._id);
         }
 
-        const response = await livekitAPI.getAccessToken(
-          session._id
-        );
+        const response = await livekitAPI.getAccessToken(session._id);
 
         if (cancelled) return;
 
-        if (!response.connection?.token || !response.connection?.serverUrl) {
-          throw new Error("O servidor não devolveu os dados de acesso à sala.");
+        if (
+          !response.connection?.token ||
+          !response.connection?.serverUrl
+        ) {
+          throw new Error(
+            "O servidor não devolveu os dados de acesso à sala."
+          );
         }
 
         setConnection(response.connection);
       } catch (err) {
         if (!cancelled) {
           setError(
-            err.message || "Não foi possível entrar na videoconferência."
+            err.message ||
+              "Não foi possível entrar na videoconferência."
           );
         }
       } finally {
@@ -61,7 +63,35 @@ function LiveRoom({
     return () => {
       cancelled = true;
     };
-  }, [session._id, session.status, canManage]);
+  }, [session._id, session.status, canManage, connectionAttempt]);
+
+  function handleRoomError(roomError) {
+    console.error("Erro LiveKit:", roomError);
+
+    setError(
+      roomError?.message ||
+        "O LiveKit encontrou um problema ao estabelecer a ligação."
+    );
+  }
+
+  function handleDisconnected(reason) {
+    console.warn("LiveKit desligado:", reason);
+
+    setDisconnected(true);
+
+    setError(
+      reason
+        ? `A ligação foi interrompida: ${String(reason)}`
+        : "A ligação à sala foi interrompida."
+    );
+  }
+
+  function handleRetry() {
+    setConnection(null);
+    setError("");
+    setDisconnected(false);
+    setConnectionAttempt((current) => current + 1);
+  }
 
   async function handleEndSession() {
     const confirmed = window.confirm(
@@ -77,12 +107,14 @@ function LiveRoom({
       await livekitAPI.endSession(session._id);
 
       if (onEnded) {
-        onEnded();
+        await onEnded();
       }
 
       onClose();
     } catch (err) {
-      setError(err.message || "Não foi possível terminar a aula.");
+      setError(
+        err.message || "Não foi possível terminar a aula."
+      );
     } finally {
       setEnding(false);
     }
@@ -106,6 +138,11 @@ function LiveRoom({
         <div className="live-room-message">
           <h2>Não foi possível entrar</h2>
           <p>{error}</p>
+
+          <button type="button" onClick={handleRetry}>
+            Tentar novamente
+          </button>
+
           <button type="button" onClick={onClose}>
             Voltar à Academia
           </button>
@@ -122,7 +159,9 @@ function LiveRoom({
         <div>
           <span>ALDAIR ONE ACADEMY</span>
           <h2>{session.title}</h2>
-          <p>{session.class?.name || "Sala de videoconferência"}</p>
+          <p>
+            {session.class?.name || "Sala de videoconferência"}
+          </p>
         </div>
 
         <div className="live-room-header-actions">
@@ -150,17 +189,29 @@ function LiveRoom({
       {error && (
         <div className="live-room-error">
           {error}
+
+          {disconnected && (
+            <button
+              type="button"
+              onClick={handleRetry}
+              style={{ marginLeft: "12px" }}
+            >
+              Tentar novamente
+            </button>
+          )}
         </div>
       )}
 
       <main className="live-room-content">
         <LiveKitRoom
+          key={connectionAttempt}
           serverUrl={connection.serverUrl}
           token={connection.token}
           connect={true}
           audio={true}
           video={true}
-          onDisconnected={onClose}
+          onError={handleRoomError}
+          onDisconnected={handleDisconnected}
           options={{
             adaptiveStream: true,
             dynacast: true
