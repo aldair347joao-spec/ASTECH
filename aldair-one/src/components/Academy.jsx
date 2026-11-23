@@ -470,6 +470,218 @@ function Academy({ user, initialTab = "courses" }) {
     }
   }
 
+  async function handleSubmitEnrollment(event) {
+    event.preventDefault();
+
+    if (!selectedEnrollmentClass) return;
+
+    if (!enrollmentPaymentConfirmed) {
+      setError("Confirma que já realizaste o pagamento.");
+      return;
+    }
+
+    if (!enrollmentProof) {
+      setError("Anexa o comprovativo do pagamento.");
+      return;
+    }
+
+    setSaving(true);
+    clearFeedback();
+
+    try {
+      const reader = new FileReader();
+
+      const fileData = await new Promise((resolve, reject) => {
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error("Não foi possível ler o comprovativo."));
+        reader.readAsDataURL(enrollmentProof);
+      });
+
+      const base64Data = String(fileData).split(",")[1];
+
+      const response = await academyAPI.enrollInClass(
+        selectedEnrollmentClass._id,
+        {
+          paymentConfirmed: true,
+          paymentMethod: enrollmentPaymentMethod,
+          proof: {
+            originalName: enrollmentProof.name,
+            mimeType: enrollmentProof.type,
+            data: base64Data
+          }
+        }
+      );
+
+      setSelectedEnrollmentClass(null);
+      setEnrollmentProof(null);
+      setEnrollmentPaymentConfirmed(false);
+
+      setMessage(
+        response.message ||
+        "Inscrição enviada. Aguarda a confirmação do pagamento."
+      );
+
+      await loadData();
+    } catch (err) {
+      setError(err.message || "Não foi possível enviar a inscrição.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function renderEnrollmentModal() {
+    if (!selectedEnrollmentClass) return null;
+
+    const express = paymentSettings.multicaixaExpress;
+    const bfa = paymentSettings.bfa;
+
+    return (
+      <div className="academy-modal-backdrop">
+        <section className="academy-modal">
+          <div className="academy-modal-heading">
+            <div>
+              <span>ALDAIR ONE ACADEMY</span>
+              <h2>Inscrição na turma</h2>
+              <p>{selectedEnrollmentClass.name}</p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setSelectedEnrollmentClass(null)}
+              aria-label="Fechar inscrição"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          <div>
+            <p>Curso: <strong>{selectedEnrollmentClass.course?.title}</strong></p>
+            <p>
+              Valor a pagar:{" "}
+              <strong>
+                {formatPrice(selectedEnrollmentClass.course?.price)}
+              </strong>
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmitEnrollment}>
+            <label>Método de pagamento</label>
+
+            <select
+              value={enrollmentPaymentMethod}
+              onChange={(event) =>
+                setEnrollmentPaymentMethod(event.target.value)
+              }
+            >
+              <option value="multicaixa_express">
+                MULTICAIXA Express
+              </option>
+              <option value="bfa_transfer">
+                Transferência bancária — BFA
+              </option>
+            </select>
+
+            {enrollmentPaymentMethod === "multicaixa_express" && (
+              <div className="academy-payment-details">
+                <h3>Pagamento por MULTICAIXA Express</h3>
+                <p>
+                  Número: <strong>{express.number || "Não configurado"}</strong>
+                </p>
+                <p>
+                  Titular: <strong>{express.holder || "Não configurado"}</strong>
+                </p>
+              </div>
+            )}
+
+            {enrollmentPaymentMethod === "bfa_transfer" && (
+              <div className="academy-payment-details">
+                <h3>Transferência bancária — BFA</h3>
+                <p>
+                  Titular: <strong>{bfa.holder || "Não configurado"}</strong>
+                </p>
+                <p>
+                  Conta: <strong>{bfa.account || "Não configurada"}</strong>
+                </p>
+                <p>
+                  IBAN: <strong>{bfa.iban || "Não configurado"}</strong>
+                </p>
+              </div>
+            )}
+
+            {paymentSettings.instructions && (
+              <div className="academy-payment-details">
+                <h3>Instruções</h3>
+                <p>{paymentSettings.instructions}</p>
+              </div>
+            )}
+
+            <label>Comprovativo de pagamento</label>
+            <input
+              type="file"
+              accept=".pdf,image/jpeg,image/png"
+              required
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+
+                if (!file) {
+                  setEnrollmentProof(null);
+                  return;
+                }
+
+                const allowedTypes = [
+                  "application/pdf",
+                  "image/jpeg",
+                  "image/png"
+                ];
+
+                if (!allowedTypes.includes(file.type)) {
+                  setEnrollmentProof(null);
+                  event.target.value = "";
+                  setError("Anexa um PDF ou uma imagem JPG/PNG.");
+                  return;
+                }
+
+                if (file.size > 5 * 1024 * 1024) {
+                  setEnrollmentProof(null);
+                  event.target.value = "";
+                  setError("O comprovativo não pode ultrapassar 5 MB.");
+                  return;
+                }
+
+                clearFeedback();
+                setEnrollmentProof(file);
+              }}
+            />
+
+            {enrollmentProof && (
+              <p>
+                Ficheiro selecionado: <strong>{enrollmentProof.name}</strong>
+              </p>
+            )}
+
+            <label className="academy-checkbox-label">
+              <input
+                type="checkbox"
+                checked={enrollmentPaymentConfirmed}
+                onChange={(event) =>
+                  setEnrollmentPaymentConfirmed(event.target.checked)
+                }
+              />
+              Confirmo que já realizei o pagamento.
+            </label>
+
+            <button
+              type="submit"
+              disabled={saving || !enrollmentProof || !enrollmentPaymentConfirmed}
+            >
+              {saving ? "A enviar inscrição..." : "Enviar inscrição"}
+            </button>
+          </form>
+        </section>
+      </div>
+    );
+  }
+
   // ABRIR FORMULÁRIOS
   function renderForm() {
     if (!showForm) return null;
@@ -1407,7 +1619,8 @@ function Academy({ user, initialTab = "courses" }) {
         </span>
       </div>
 
-      {renderForm()}
+            {renderForm()}
+      {renderEnrollmentModal()}
       {renderRoster()}
 
       {/* SALA DE VIDEOCONFERÊNCIA LIVEKIT */}
