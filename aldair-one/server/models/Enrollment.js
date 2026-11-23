@@ -62,6 +62,16 @@ const enrollmentSchema = new mongoose.Schema(
         trim: true
       },
 
+      method: {
+        type: String,
+        enum: [
+          "multicaixa_express",
+          "bfa_transfer",
+          null
+        ],
+        default: null
+      },
+
       paidAt: {
         type: Date,
         default: null
@@ -71,6 +81,68 @@ const enrollmentSchema = new mongoose.Schema(
         type: String,
         trim: true,
         default: null
+      },
+
+      proof: {
+        originalName: {
+          type: String,
+          default: null,
+          trim: true
+        },
+
+        mimeType: {
+          type: String,
+          enum: [
+            "application/pdf",
+            "image/jpeg",
+            "image/png"
+          ],
+          default: null
+        },
+
+        size: {
+          type: Number,
+          default: 0
+        },
+
+        data: {
+          type: String,
+          default: null
+        },
+
+        submittedAt: {
+          type: Date,
+          default: null
+        },
+
+        reviewStatus: {
+          type: String,
+          enum: [
+            "not_submitted",
+            "pending",
+            "approved",
+            "rejected"
+          ],
+          default: "not_submitted"
+        },
+
+        reviewedAt: {
+          type: Date,
+          default: null
+        },
+
+        reviewedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          default: null
+        },
+
+        rejectionReason: {
+          type: String,
+          trim: true,
+          maxlength: 500,
+          default: ""
+        }
       }
     },
 
