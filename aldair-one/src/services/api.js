@@ -409,4 +409,24 @@ export const livekitAPI = {
     )
 };
 
+export const servicesAPI = {
+  createRequest: (requestData) =>
+    apiRequest("/api/services/requests", {
+      method: "POST",
+      body: JSON.stringify(requestData)
+    }),
+
+  getRequests: () =>
+    apiRequest("/api/services/requests"),
+
+  updateRequestStatus: (requestId, status) =>
+    apiRequest(
+      `/api/services/requests/${encodeURIComponent(requestId)}/status`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ status })
+      }
+    )
+};
+
 export default apiRequest;
