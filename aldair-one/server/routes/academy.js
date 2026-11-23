@@ -331,8 +331,27 @@ router.get("/classes", async (req, res) => {
       }
     } else if (isInstructor(req.user)) {
       filter.instructor = req.user._id;
+    } else if (req.user.role === "student") {
+      const enrollments = await Enrollment.find({
+        student: req.user._id,
+        status: { $ne: "cancelled" }
+      })
+        .select("class")
+        .lean();
+
+      const enrolledClassIds = enrollments.map(
+        enrollment => enrollment.class
+      );
+
+      filter.$or = [
+        { status: "open" },
+        { _id: { $in: enrolledClassIds } }
+      ];
     } else {
-      filter.students = req.user._id;
+      return res.status(403).json({
+        success: false,
+        message: "Não tens autorização para consultar as turmas."
+      });
     }
 
     const classes = await ClassModel.find(filter)
@@ -724,26 +743,57 @@ router.post("/classes/:id/enroll", async (req, res) => {
       });
     }
 
-    if (classItem.students.some(
-      student => student.toString() === req.user._id.toString()
-    )) {
+    const coursePrice = Number(
+      classItem.course?.price?.amount || 0
+    );
+
+    const isFree = coursePrice <= 0;
+
+    // Verificar inscrição anterior do mesmo aluno
+    const existingEnrollment = await Enrollment.findOne({
+      student: req.user._id,
+      class: classItem._id
+    });
+
+    if (
+      existingEnrollment &&
+      existingEnrollment.status !== "cancelled"
+    ) {
       return res.status(409).json({
         success: false,
-        message: "Já estás inscrito nesta turma."
+        message: existingEnrollment.status === "pending"
+          ? "Já tens um pedido de inscrição pendente. Aguarda a confirmação do pagamento."
+          : "Já estás inscrito nesta turma."
       });
     }
 
-    if (classItem.students.length >= classItem.capacity) {
+    // Contabilizar alunos já inscritos e pedidos pagos pendentes.
+    // Os alunos presentes em students não são contados duas vezes.
+    const pendingEnrollments = await Enrollment.find({
+      class: classItem._id,
+      status: "pending"
+    })
+      .select("student")
+      .lean();
+
+    const occupiedStudents = new Set(
+      (classItem.students || []).map(
+        student => student.toString()
+      )
+    );
+
+    for (const enrollment of pendingEnrollments) {
+      occupiedStudents.add(enrollment.student.toString());
+    }
+
+    if (occupiedStudents.size >= Number(classItem.capacity || 0)) {
       return res.status(409).json({
         success: false,
         message: "Esta turma já atingiu a sua capacidade."
       });
     }
 
-    const coursePrice = Number(classItem.course.price?.amount || 0);
-    const isFree = coursePrice <= 0;
-
-    const enrollment = await Enrollment.create({
+    const enrollmentData = {
       student: req.user._id,
       course: classItem.course._id,
       class: classItem._id,
@@ -753,7 +803,21 @@ router.post("/classes/:id/enroll", async (req, res) => {
         amount: coursePrice,
         currency: classItem.course.price?.currency || "AOA"
       }
-    });
+    };
+
+    let enrollment;
+
+    if (existingEnrollment) {
+      // Reutilizar inscrição cancelada para respeitar o índice único.
+      existingEnrollment.status = enrollmentData.status;
+      existingEnrollment.payment = enrollmentData.payment;
+      existingEnrollment.cancelledAt = undefined;
+      existingEnrollment.completedAt = undefined;
+
+      enrollment = await existingEnrollment.save();
+    } else {
+      enrollment = await Enrollment.create(enrollmentData);
+    }
 
     if (isFree) {
       await ClassModel.updateOne(
@@ -1024,9 +1088,26 @@ router.patch(
         student => student.toString() === enrollment.student.toString()
       );
 
+      // Contar também outros pedidos pendentes que reservam vagas.
+      const pendingEnrollments = await Enrollment.find({
+        class: classItem._id,
+        status: "pending",
+        _id: { $ne: enrollment._id }
+      })
+        .select("student")
+        .lean();
+
+      const occupiedStudents = new Set(
+        classItem.students.map(student => student.toString())
+      );
+
+      for (const item of pendingEnrollments) {
+        occupiedStudents.add(item.student.toString());
+      }
+
       if (
         !alreadyAdded &&
-        classItem.students.length >= classItem.capacity
+        occupiedStudents.size >= Number(classItem.capacity || 0)
       ) {
         return res.status(409).json({
           success: false,
@@ -1194,15 +1275,15 @@ router.post(
         timezone: classItem.timezone || "Africa/Luanda",
         status: "scheduled",
         recording: {
-  enabled:
-    (isAdmin(req.user) || isInstructor(req.user)) &&
-    recordingEnabled === true,
-  status:
-    recordingEnabled === true &&
-    (isAdmin(req.user) || isInstructor(req.user))
-      ? "not_started"
-      : "disabled"
-},
+          enabled:
+            (isAdmin(req.user) || isInstructor(req.user)) &&
+            recordingEnabled === true,
+          status:
+            recordingEnabled === true &&
+            (isAdmin(req.user) || isInstructor(req.user))
+              ? "not_started"
+              : "disabled"
+        },
         createdBy: req.user._id
       });
 
