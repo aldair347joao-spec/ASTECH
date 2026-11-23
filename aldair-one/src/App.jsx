@@ -24,7 +24,7 @@ import {
   Sparkles,
   ExternalLink
 } from "lucide-react";
-
+import ServiceRequestModal from "./components/ServiceRequestModal";
 import AuthModal from "./components/AuthModal";
 import Dashboard from "./components/Dashboard";
 import { authAPI, getToken } from "./services/api";
@@ -110,6 +110,8 @@ function App() {
   const [user, setUser] = useState(null);
   const [dashboardOpen, setDashboardOpen] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
+  const [serviceModalOpen, setServiceModalOpen] = useState(false);
+const [selectedService, setSelectedService] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -478,14 +480,18 @@ function App() {
 
                   <h3>{service.title}</h3>
                   <p>{service.description}</p>
-
-                  <a
-                    href="#contacto"
-                    aria-label={`Consultar ${service.title}`}
-                  >
-                    Saber mais
-                    <ArrowUpRight size={18} />
-                  </a>
+    <button
+  type="button"
+  className="service-request-link"
+  onClick={() => {
+    setSelectedService(service.title);
+    setServiceModalOpen(true);
+  }}
+  aria-label={`Solicitar ${service.title}`}
+>
+  Solicitar serviço
+  <ArrowUpRight size={18} />
+</button>
                 </article>
               );
             })}
@@ -661,7 +667,12 @@ function App() {
           <ChevronRight size={16} />
         </a>
       </footer>
-
+  {serviceModalOpen && (
+  <ServiceRequestModal
+    service={selectedService}
+    onClose={() => setServiceModalOpen(false)}
+  />
+)}
       {/* AUTENTICAÇÃO */}
       {authOpen && (
         <AuthModal
