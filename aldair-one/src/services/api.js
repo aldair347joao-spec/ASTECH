@@ -244,13 +244,16 @@ export const academyAPI = {
       }
     ),
 
-  enrollInClass: (classId) =>
-    apiRequest(
-      `/api/academy/classes/${encodeURIComponent(classId)}/enroll`,
-      {
-        method: "POST"
-      }
-    ),
+  
+enrollInClass: (classId, enrollmentData = {}) =>
+  apiRequest(
+    `/api/academy/classes/${encodeURIComponent(classId)}/enroll`,
+    {
+      method: "POST",
+      body: JSON.stringify(enrollmentData)
+    }
+  ),
+
 
   // INSCRIÇÕES
 
