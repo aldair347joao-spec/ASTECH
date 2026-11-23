@@ -262,6 +262,37 @@ export const academyAPI = {
       `/api/academy/enrollments${buildQuery(filters)}`
     ),
 
+  // ==========================================
+  // MATERIAIS, DOCUMENTOS E CERTIFICADOS
+  // ==========================================
+
+  getClassMaterials: (classId) =>
+    apiRequest(
+      `/api/academy/classes/${encodeURIComponent(classId)}/materials`
+    ),
+
+  uploadClassMaterial: (classId, materialData) =>
+    apiRequest(
+      `/api/academy/classes/${encodeURIComponent(classId)}/materials`,
+      {
+        method: "POST",
+        body: JSON.stringify(materialData)
+      }
+    ),
+
+  getMaterialFile: (materialId) =>
+    apiRequest(
+      `/api/academy/materials/${encodeURIComponent(materialId)}/file`
+    ),
+
+  deleteMaterial: (materialId) =>
+    apiRequest(
+      `/api/academy/materials/${encodeURIComponent(materialId)}`,
+      {
+        method: "DELETE"
+      }
+    ),
+
   // OBTER COMPROVATIVO DE PAGAMENTO
 
   getEnrollmentProof: (enrollmentId) =>
