@@ -1429,3 +1429,24 @@
     width: 100%;
   }
 }
+
+.academy-payment-details {
+  padding: 15px;
+  margin: 10px 0;
+  border: 1px solid rgba(96, 165, 250, 0.25);
+  border-radius: 12px;
+  background: rgba(30, 64, 175, 0.12);
+}
+
+.academy-payment-details h3 {
+  margin: 0 0 10px;
+  color: #60a5fa;
+  font-size: 14px;
+}
+
+.academy-payment-details p {
+  margin: 7px 0;
+  color: #cbd5e1;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
