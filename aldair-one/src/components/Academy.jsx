@@ -198,7 +198,6 @@ function Academy({ user, initialTab = "courses" }) {
     } catch (err) { setError(err.message || "Não foi possível carregar os dados de pagamento."); }
     finally { setPaymentSettingsLoading(false); }
   }, [isAdmin]);
-  useEffect(() => { if (activeTab === "payments" && isAdmin) loadPaymentSettings(); }, [activeTab, isAdmin, loadPaymentSettings]);
     useEffect(() => { if (activeTab === "payments" && isAdmin) loadPaymentSettings(); }, [activeTab, isAdmin, loadPaymentSettings]);
 
   function clearFeedback() { setError(""); setMessage(""); }
@@ -1195,7 +1194,7 @@ function Academy({ user, initialTab = "courses" }) {
                           onChange={(e) =>
                             handleClassStatus(classItem, e.target.value)
                           }
-                                                    }
+                                                    
                           aria-label={`Estado de ${classItem.name}`}
                         >
                           <option value="draft">Rascunho</option>
