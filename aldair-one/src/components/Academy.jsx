@@ -97,7 +97,10 @@ function Academy({ user, initialTab = "courses" }) {
   const [instructors, setInstructors] = useState([]);
   const [paymentSettings, setPaymentSettings] = useState({ multicaixaExpress: { number: "", holder: "" }, bfa: { holder: "", account: "", iban: "" }, instructions: "" });
   const [paymentSettingsLoading, setPaymentSettingsLoading] = useState(false);
-
+    const [selectedEnrollmentClass, setSelectedEnrollmentClass] = useState(null);
+  const [enrollmentPaymentMethod, setEnrollmentPaymentMethod] = useState("multicaixa_express");
+  const [enrollmentPaymentConfirmed, setEnrollmentPaymentConfirmed] = useState(false);
+  const [enrollmentProof, setEnrollmentProof] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -365,19 +368,48 @@ function Academy({ user, initialTab = "courses" }) {
     }
   }
 
-  async function handleEnrollment(classId) {
+    async function handleEnrollment(classItem) {
     clearFeedback();
 
-    try {
-      const response = await academyAPI.enrollInClass(classId);
+    const amount = Number(classItem.course?.price?.amount || 0);
 
-      setMessage(response.message || "Pedido de inscrição enviado.");
-      await loadData();
+    if (amount <= 0) {
+      try {
+        const response = await academyAPI.enrollInClass(classItem._id, {});
+        setMessage(response.message || "Inscrição realizada com sucesso.");
+        await loadData();
+      } catch (err) {
+        setError(err.message || "Não foi possível realizar a inscrição.");
+      }
+
+      return;
+    }
+
+    try {
+      const response = await academyAPI.getPaymentSettings();
+      const settings = response.settings || {};
+
+      setPaymentSettings({
+        multicaixaExpress: {
+          number: settings.multicaixaExpress?.number || "",
+          holder: settings.multicaixaExpress?.holder || ""
+        },
+        bfa: {
+          holder: settings.bfa?.holder || "",
+          account: settings.bfa?.account || "",
+          iban: settings.bfa?.iban || ""
+        },
+        instructions: settings.instructions || ""
+      });
+
+      setEnrollmentPaymentMethod("multicaixa_express");
+      setEnrollmentPaymentConfirmed(false);
+      setEnrollmentProof(null);
+      setSelectedEnrollmentClass(classItem);
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Não foi possível carregar os dados de pagamento.");
     }
   }
-
   async function handleActivateEnrollment(enrollmentId) {
     clearFeedback();
 
@@ -1180,14 +1212,13 @@ function Academy({ user, initialTab = "courses" }) {
                         </button>
                       )}
 
-                      {isStudent && classItem.status === "open" && (
+                                            {isStudent && classItem.status === "open" && (
                         <button
-                          onClick={() => handleEnrollment(classItem._id)}
+                          onClick={() => handleEnrollment(classItem)}
                         >
                           Inscrever-me
                         </button>
                       )}
-
                       {isAdmin && (
                         <select
                           value={classItem.status}
