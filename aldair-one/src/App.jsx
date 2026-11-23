@@ -20,7 +20,9 @@ import {
   Zap,
   ChevronRight,
   LogIn,
-  UserRound
+  UserRound,
+  Sparkles,
+  ExternalLink
 } from "lucide-react";
 
 import AuthModal from "./components/AuthModal";
@@ -30,24 +32,28 @@ import { authAPI, getToken } from "./services/api";
 const services = [
   {
     icon: Code2,
+    number: "01",
     title: "Desenvolvimento de Sistemas",
     description:
       "Criação de aplicações web, plataformas digitais e sistemas personalizados para responder às necessidades das empresas."
   },
   {
     icon: Workflow,
+    number: "02",
     title: "Automação Inteligente",
     description:
       "Automatização de processos, tarefas operacionais, navegação web e integração entre plataformas."
   },
   {
     icon: BriefcaseBusiness,
+    number: "03",
     title: "Gestão Empresarial",
     description:
       "Implementação, configuração e personalização de soluções empresariais, incluindo Odoo e CRM."
   },
   {
     icon: BrainCircuit,
+    number: "04",
     title: "Inteligência Artificial",
     description:
       "Integração de IA em processos empresariais, análise de dados e desenvolvimento de soluções inteligentes."
@@ -57,27 +63,30 @@ const services = [
 const projects = [
   {
     name: "HONEY PAY",
-    category: "Fintech · Pagamentos",
+    category: "FINTECH · PAGAMENTOS",
     description:
-      "Projeto de plataforma digital orientada para integrações de pagamentos e soluções financeiras.",
+      "Plataforma digital orientada para integrações de pagamentos e soluções financeiras.",
     status: "Em desenvolvimento",
-    icon: Zap
+    icon: Zap,
+    number: "01"
   },
   {
     name: "TRAVEL AUTOMATION",
-    category: "Automação · Tecnologia",
+    category: "AUTOMAÇÃO · TECNOLOGIA",
     description:
       "Sistema de automação de processos de navegação e acompanhamento de fluxos de agendamento.",
     status: "Projeto em evolução",
-    icon: Globe
+    icon: Globe,
+    number: "02"
   },
   {
     name: "SMARTBIZ",
-    category: "Gestão · Inteligência",
+    category: "GESTÃO · INTELIGÊNCIA",
     description:
-      "Conceito de plataforma inteligente para apoiar operações, relacionamento com clientes e decisões empresariais.",
+      "Plataforma inteligente para apoiar operações, relacionamento com clientes e decisões empresariais.",
     status: "Em desenvolvimento",
-    icon: Layers3
+    icon: Layers3,
+    number: "03"
   }
 ];
 
@@ -170,7 +179,7 @@ function App() {
             display: "grid",
             placeItems: "center",
             color: "#ffffff",
-            background: "#080f1e",
+            background: "#080d19",
             fontSize: "16px"
           }}
         >
@@ -191,27 +200,29 @@ function App() {
 
   return (
     <div className="app">
+      {/* CABEÇALHO */}
       <header className="header">
-        <a href="#inicio" className="brand" onClick={closeMenu}>
+        <a
+          href="#inicio"
+          className="brand"
+          onClick={closeMenu}
+          aria-label="ALDAIR ONE - Início"
+        >
           <span className="brand-mark">A</span>
+
           <span>
             <strong>ALDAIR ONE</strong>
             <small>TECHNOLOGY ECOSYSTEM</small>
           </span>
         </a>
 
-        <button
-          className="mobile-menu"
-          onClick={() => setMenuOpen(!menuOpen)}
-          aria-label="Abrir menu"
-          aria-expanded={menuOpen}
-        >
-          {menuOpen ? <X /> : <Menu />}
-        </button>
-
         <nav className={menuOpen ? "nav nav-open" : "nav"}>
           {navItems.map(([label, link]) => (
-            <a key={link} href={link} onClick={closeMenu}>
+            <a
+              key={link}
+              href={link}
+              onClick={closeMenu}
+            >
               {label}
             </a>
           ))}
@@ -221,12 +232,13 @@ function App() {
             className="nav-cta"
             onClick={closeMenu}
           >
-            Vamos conversar <ArrowUpRight size={15} />
+            Vamos conversar
+            <ArrowUpRight size={15} />
           </a>
 
           <button
             type="button"
-            className="nav-cta"
+            className="nav-cta nav-account"
             onClick={() => {
               closeMenu();
 
@@ -235,11 +247,6 @@ function App() {
               } else {
                 setAuthOpen(true);
               }
-            }}
-            style={{
-              border: "none",
-              cursor: "pointer",
-              fontFamily: "inherit"
             }}
           >
             {user ? (
@@ -255,6 +262,30 @@ function App() {
             )}
           </button>
         </nav>
+
+        {/* FOTOGRAFIA DE PERFIL NO CABEÇALHO */}
+        <a
+          href="#sobre"
+          className="header-profile"
+          onClick={closeMenu}
+          aria-label="Ver perfil de Aldair João Francisco"
+          title="Aldair João Francisco"
+        >
+          <img
+            src="/aldair-profile.jpg"
+            alt="Aldair João Francisco"
+          />
+        </a>
+
+        <button
+          className="mobile-menu"
+          type="button"
+          onClick={() => setMenuOpen(!menuOpen)}
+          aria-label={menuOpen ? "Fechar menu" : "Abrir menu"}
+          aria-expanded={menuOpen}
+        >
+          {menuOpen ? <X /> : <Menu />}
+        </button>
       </header>
 
       <main>
@@ -266,25 +297,37 @@ function App() {
               TECNOLOGIA · INOVAÇÃO · SOLUÇÕES
             </div>
 
+            <span className="hero-intro">
+              OLÁ, SOU ALDAIR JOÃO FRANCISCO
+            </span>
+
             <h1>
-              Uma visão.
+              Transformo ideias
               <br />
-              <span>Múltiplas soluções.</span>
+              em <span>soluções digitais.</span>
             </h1>
 
             <p className="hero-description">
-              Sou Aldair João Francisco. Desenvolvo soluções tecnológicas
-              que conectam negócios, automação e inteligência para transformar
-              ideias em resultados.
+              Desenvolvedor Full Stack focado na criação de sistemas,
+              automação de processos e soluções tecnológicas que ajudam
+              empresas e pessoas a evoluir.
             </p>
+
+            <div className="hero-specialties">
+              <span>Desenvolvimento de software</span>
+              <span>Automação</span>
+              <span>Inteligência Artificial</span>
+            </div>
 
             <div className="hero-actions">
               <a href="#projetos" className="button button-primary">
-                Explorar projetos <ArrowRight size={18} />
+                Explorar projetos
+                <ArrowRight size={18} />
               </a>
 
-              <a href="#sobre" className="button button-outline">
-                Conhecer o meu trabalho
+              <a href="#contacto" className="button button-outline">
+                Entrar em contacto
+                <ArrowUpRight size={17} />
               </a>
             </div>
 
@@ -301,24 +344,30 @@ function App() {
             </div>
           </div>
 
-          {/* FOTOGRAFIA PROFISSIONAL */}
+          {/* ELEMENTO VISUAL DA MARCA */}
           <div className="hero-visual">
-            <div className="hero-photo-frame">
-              <img
-                src="/aldair-profile.jpg"
-                alt="Aldair João Francisco"
-                className="hero-profile-photo"
-                loading="eager"
-              />
+            <div className="hero-glow" />
+            <div className="hero-orbit hero-orbit-one" />
+            <div className="hero-orbit hero-orbit-two" />
 
-              <div className="hero-photo-caption">
-                <span className="status-dot" />
+            <div className="hero-brand-symbol">
+              <span>A</span>
+              <small>ALDAIR ONE</small>
+            </div>
 
-                <div>
-                  <strong>Aldair João Francisco</strong>
-                  <small>DESENVOLVEDOR FULL STACK</small>
-                </div>
-              </div>
+            <div className="hero-floating hero-floating-top">
+              <BrainCircuit size={19} />
+              <span>Inteligência Artificial</span>
+            </div>
+
+            <div className="hero-floating hero-floating-bottom">
+              <Code2 size={19} />
+              <span>Desenvolvimento</span>
+            </div>
+
+            <div className="hero-floating hero-floating-side">
+              <Workflow size={19} />
+              <span>Automação</span>
             </div>
           </div>
         </section>
@@ -344,8 +393,11 @@ function App() {
         {/* SOBRE */}
         <section className="section about" id="sobre">
           <div className="section-heading">
-            <span className="section-label">01 — SOBRE</span>
+            <span className="section-label">01 — SOBRE MIM</span>
             <h2>Tecnologia com propósito.</h2>
+            <p className="muted">
+              Conhecimento técnico aplicado à resolução de problemas reais.
+            </p>
           </div>
 
           <div className="about-grid">
@@ -357,30 +409,42 @@ function App() {
 
               <p className="muted">
                 O meu trabalho cruza desenvolvimento de software, automação,
-                plataformas de gestão empresarial, análise de dados e
-                integração de inteligência artificial. O objetivo é criar
-                ferramentas úteis, eficientes e adaptadas às necessidades
-                concretas dos negócios.
+                plataformas de gestão empresarial, integração de APIs e
+                inteligência artificial. Procuro construir ferramentas
+                úteis, eficientes e adaptadas às necessidades concretas
+                dos negócios.
               </p>
 
               <a href="#contacto" className="text-link">
-                Trabalhar comigo <ArrowUpRight size={17} />
+                Trabalhar comigo
+                <ArrowUpRight size={17} />
               </a>
             </div>
 
             <div className="profile-card">
               <div className="profile-symbol">AJF</div>
+
+              <span className="profile-card-label">
+                PERFIL PROFISSIONAL
+              </span>
+
               <h3>Aldair João Francisco</h3>
               <p>Desenvolvedor Full Stack</p>
+
               <div className="profile-line" />
-              <span>
-                Desenvolvimento · Automação · Sistemas empresariais
+
+              <span className="profile-card-description">
+                Desenvolvimento de software · Automação · Sistemas
+                empresariais · Integrações tecnológicas
               </span>
             </div>
           </div>
 
           <div className="tech-area">
-            <h3>Ferramentas e tecnologias</h3>
+            <div className="tech-heading">
+              <span className="section-label">COMPETÊNCIAS TÉCNICAS</span>
+              <h3>Ferramentas e tecnologias</h3>
+            </div>
 
             <div className="tech-list">
               {technologies.map((tech) => (
@@ -396,18 +460,19 @@ function App() {
             <span className="section-label">02 — SERVIÇOS</span>
             <h2>Soluções para avançar.</h2>
             <p className="muted">
-              Tecnologia aplicada às necessidades de pessoas, projetos e empresas.
+              Tecnologia aplicada às necessidades de pessoas, projetos
+              e empresas.
             </p>
           </div>
 
           <div className="service-grid">
-            {services.map((service, index) => {
+            {services.map((service) => {
               const Icon = service.icon;
 
               return (
                 <article className="service-card" key={service.title}>
                   <div className="service-top">
-                    <span>0{index + 1}</span>
+                    <span>{service.number}</span>
                     <Icon size={25} />
                   </div>
 
@@ -418,7 +483,8 @@ function App() {
                     href="#contacto"
                     aria-label={`Consultar ${service.title}`}
                   >
-                    <ArrowUpRight size={20} />
+                    Saber mais
+                    <ArrowUpRight size={18} />
                   </a>
                 </article>
               );
@@ -429,10 +495,11 @@ function App() {
         {/* PROJETOS */}
         <section className="section projects" id="projetos">
           <div className="section-heading">
-            <span className="section-label">03 — PROJETOS</span>
-            <h2>Ideias em construção.</h2>
+            <span className="section-label">03 — PORTFÓLIO</span>
+            <h2>Projetos e soluções.</h2>
             <p className="muted">
-              Projetos que demonstram a aplicação prática da tecnologia.
+              Projetos que representam a aplicação prática da tecnologia
+              em diferentes áreas.
             </p>
           </div>
 
@@ -442,8 +509,14 @@ function App() {
 
               return (
                 <article className="project-card" key={project.name}>
-                  <div className="project-icon">
-                    <Icon size={27} />
+                  <div className="project-card-top">
+                    <div className="project-icon">
+                      <Icon size={27} />
+                    </div>
+
+                    <span className="project-number">
+                      {project.number}
+                    </span>
                   </div>
 
                   <span className="project-category">
@@ -497,7 +570,8 @@ function App() {
             </div>
 
             <a href="#contacto" className="button button-primary">
-              Conhecer a Academia <ArrowRight size={18} />
+              Conhecer a Academia
+              <ArrowRight size={18} />
             </a>
           </div>
 
@@ -511,7 +585,8 @@ function App() {
             <h2>Vamos criar algo relevante?</h2>
 
             <p className="muted">
-              Tens um desafio, uma ideia ou um projeto? Vamos conversar.
+              Tens um desafio, uma ideia ou um projeto?
+              Estou disponível para conversar.
             </p>
           </div>
 
@@ -543,7 +618,7 @@ function App() {
                 <strong>Explorar repositórios</strong>
               </span>
 
-              <ArrowUpRight />
+              <ExternalLink />
             </a>
 
             <a
@@ -559,7 +634,7 @@ function App() {
                 <strong>Perfil profissional</strong>
               </span>
 
-              <ArrowUpRight />
+              <ExternalLink />
             </a>
           </div>
         </section>
@@ -577,11 +652,13 @@ function App() {
         </a>
 
         <p>
-          © {new Date().getFullYear()} ALDAIR ONE. Todos os direitos reservados.
+          © {new Date().getFullYear()} ALDAIR ONE.
+          Todos os direitos reservados.
         </p>
 
         <a href="#inicio" className="back-top">
-          Voltar ao topo <ChevronRight size={16} />
+          Voltar ao topo
+          <ChevronRight size={16} />
         </a>
       </footer>
 
