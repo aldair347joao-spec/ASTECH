@@ -456,12 +456,11 @@ router.get("/classes", async (req, res) => {
     }
 
     const classes = await ClassModel.find(filter)
-      .populate("course", "title slug category level")
-      .populate("instructor", "name email")
-      .populate("students", "name email")
-      .sort({ startDate: 1 })
-      .lean();
-
+  .populate("course", "title slug category level price")
+  .populate("instructor", "name email")
+  .populate("students", "name email")
+  .sort({ startDate: 1 })
+  .lean();
     return res.json({
       success: true,
       classes
