@@ -1471,12 +1471,13 @@ function Academy({ user, initialTab = "courses" }) {
                       )}
 
                                             {isStudent && classItem.status === "open" && (
-                        <button
-                          onClick={() => handleEnrollment(classItem)}
-                        >
-                          Inscrever-me
-                        </button>
-                      )}
+  <button
+    type="button"
+    onClick={() => handleEnrollment(classItem)}
+  >
+    Inscrever-me
+  </button>
+)}
                       {isAdmin && (
                         <select
                           value={classItem.status}
