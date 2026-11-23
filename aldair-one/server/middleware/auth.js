@@ -2,6 +2,8 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
+const SUPER_ADMIN_EMAIL = "aldair347joao@gmail.com";
+
 export async function authenticate(req, res, next) {
   try {
     const authorization = req.headers.authorization;
@@ -27,6 +29,17 @@ export async function authenticate(req, res, next) {
       return res.status(401).json({
         success: false,
         message: "Sessão inválida ou utilizador inactivo."
+      });
+    }
+
+    // Impedir que outra conta utilize o papel de Super Administrador.
+    if (
+      user.role === "super_admin" &&
+      user.email.toLowerCase() !== SUPER_ADMIN_EMAIL
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Conta sem autorização de Super Administrador."
       });
     }
 
@@ -58,6 +71,16 @@ export function authorize(...allowedRoles) {
       return res.status(403).json({
         success: false,
         message: "Não tens permissão para executar esta operação."
+      });
+    }
+
+    if (
+      allowedRoles.includes("super_admin") &&
+      req.user.email.toLowerCase() !== SUPER_ADMIN_EMAIL
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Apenas a conta principal pode executar esta operação."
       });
     }
 
