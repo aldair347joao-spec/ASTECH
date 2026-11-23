@@ -52,7 +52,8 @@ app.use(
 // Webhook LiveKit: deve vir antes do parser JSON.
 app.use("/api/livekit", livekitWebhookRoutes);
 
-app.use(express.json({ limit: "1mb" }));
+// Limite aumentado para permitir comprovativos de pagamento.
+app.use(express.json({ limit: "8mb" }));
 
 app.get("/", (req, res) => {
   res.json({
