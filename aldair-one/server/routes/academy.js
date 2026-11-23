@@ -814,7 +814,7 @@ router.patch(
 // ==========================================
 // INSCRIÇÕES
 // ==========================================
-
+ 
 // Inscrever aluno numa turma
 router.post("/classes/:id/enroll", async (req, res) => {
   try {
@@ -844,13 +844,19 @@ router.post("/classes/:id/enroll", async (req, res) => {
       });
     }
 
+    if (!classItem.course) {
+      return res.status(404).json({
+        success: false,
+        message: "O curso associado a esta turma não foi encontrado."
+      });
+    }
+
     const coursePrice = Number(
-      classItem.course?.price?.amount || 0
+      classItem.course.price?.amount || 0
     );
 
     const isFree = coursePrice <= 0;
 
-    // Verificar inscrição anterior do mesmo aluno
     const existingEnrollment = await Enrollment.findOne({
       student: req.user._id,
       class: classItem._id
@@ -862,36 +868,174 @@ router.post("/classes/:id/enroll", async (req, res) => {
     ) {
       return res.status(409).json({
         success: false,
-        message: existingEnrollment.status === "pending"
-          ? "Já tens um pedido de inscrição pendente. Aguarda a confirmação do pagamento."
-          : "Já estás inscrito nesta turma."
+        message:
+          existingEnrollment.status === "pending"
+            ? "Já tens uma inscrição pendente de confirmação."
+            : "Já estás inscrito nesta turma."
       });
     }
 
-    // Contabilizar alunos já inscritos e pedidos pagos pendentes.
-    // Os alunos presentes em students não são contados duas vezes.
-    const pendingEnrollments = await Enrollment.find({
-      class: classItem._id,
-      status: "pending"
-    })
-      .select("student")
-      .lean();
-
-    const occupiedStudents = new Set(
+    // Apenas alunos já adicionados à turma ocupam vagas.
+    const occupiedSeats = new Set(
       (classItem.students || []).map(
         student => student.toString()
       )
     );
 
-    for (const enrollment of pendingEnrollments) {
-      occupiedStudents.add(enrollment.student.toString());
-    }
-
-    if (occupiedStudents.size >= Number(classItem.capacity || 0)) {
+    // Cursos gratuitos são ativados imediatamente.
+    if (
+      isFree &&
+      Number(classItem.capacity || 0) > 0 &&
+      occupiedSeats.size >= Number(classItem.capacity)
+    ) {
       return res.status(409).json({
         success: false,
         message: "Esta turma já atingiu a sua capacidade."
       });
+    }
+
+    let paymentData;
+
+    if (isFree) {
+      paymentData = {
+        status: "not_required",
+        amount: 0,
+        currency: classItem.course.price?.currency || "AOA",
+        method: null
+      };
+    } else {
+      const {
+        paymentConfirmed,
+        paymentMethod,
+        proof
+      } = req.body || {};
+
+      if (paymentConfirmed !== true) {
+        return res.status(400).json({
+          success: false,
+          message: "Confirma que já realizaste o pagamento."
+        });
+      }
+
+      const allowedMethods = [
+        "multicaixa_express",
+        "bfa_transfer"
+      ];
+
+      if (!allowedMethods.includes(paymentMethod)) {
+        return res.status(400).json({
+          success: false,
+          message: "Seleciona um método de pagamento válido."
+        });
+      }
+
+      if (
+        !proof ||
+        !proof.originalName ||
+        !proof.mimeType ||
+        !proof.data
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Anexa o comprovativo do pagamento."
+        });
+      }
+
+      const allowedTypes = [
+        "application/pdf",
+        "image/jpeg",
+        "image/png"
+      ];
+
+      if (!allowedTypes.includes(proof.mimeType)) {
+        return res.status(400).json({
+          success: false,
+          message: "Formato inválido. Envia PDF, JPG ou PNG."
+        });
+      }
+
+      // Aceita base64 simples ou Data URL.
+      const base64Data = String(proof.data)
+        .replace(/^data:[^;]+;base64,/, "")
+        .replace(/\s/g, "");
+
+      if (
+        !base64Data ||
+        !/^[A-Za-z0-9+/]*={0,2}$/.test(base64Data)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "O ficheiro enviado não é válido."
+        });
+      }
+
+      const fileBuffer = Buffer.from(base64Data, "base64");
+
+      const maxFileSize = 5 * 1024 * 1024;
+
+      if (
+        fileBuffer.length === 0 ||
+        fileBuffer.length > maxFileSize
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "O comprovativo não pode ultrapassar 5 MB."
+        });
+      }
+
+      // Verificar assinatura real do ficheiro.
+      const isPDF =
+        fileBuffer.subarray(0, 5).toString() === "%PDF-";
+
+      const isJPEG =
+        fileBuffer.length >= 3 &&
+        fileBuffer[0] === 0xFF &&
+        fileBuffer[1] === 0xD8 &&
+        fileBuffer[2] === 0xFF;
+
+      const isPNG =
+        fileBuffer.length >= 8 &&
+        fileBuffer.subarray(0, 8).equals(
+          Buffer.from([
+            0x89, 0x50, 0x4E, 0x47,
+            0x0D, 0x0A, 0x1A, 0x0A
+          ])
+        );
+
+      const validFile =
+        (proof.mimeType === "application/pdf" && isPDF) ||
+        (proof.mimeType === "image/jpeg" && isJPEG) ||
+        (proof.mimeType === "image/png" && isPNG);
+
+      if (!validFile) {
+        return res.status(400).json({
+          success: false,
+          message: "O conteúdo do ficheiro não corresponde ao formato indicado."
+        });
+      }
+
+      const originalName = String(proof.originalName)
+        .split(/[\\/]/)
+        .pop()
+        .slice(0, 180);
+
+      paymentData = {
+        status: "pending",
+        amount: coursePrice,
+        currency: classItem.course.price?.currency || "AOA",
+        method: paymentMethod,
+        proof: {
+          originalName,
+          mimeType: proof.mimeType,
+          size: fileBuffer.length,
+          data: fileBuffer.toString("base64"),
+          submittedAt: new Date(),
+          reviewStatus: "pending",
+          reviewedAt: null,
+          reviewedBy: null,
+          rejectionReason: ""
+        }
+      };
     }
 
     const enrollmentData = {
@@ -899,41 +1043,49 @@ router.post("/classes/:id/enroll", async (req, res) => {
       course: classItem.course._id,
       class: classItem._id,
       status: isFree ? "active" : "pending",
-      payment: {
-        status: isFree ? "not_required" : "pending",
-        amount: coursePrice,
-        currency: classItem.course.price?.currency || "AOA"
-      }
+      payment: paymentData
     };
 
     let enrollment;
 
     if (existingEnrollment) {
-      // Reutilizar inscrição cancelada para respeitar o índice único.
       existingEnrollment.status = enrollmentData.status;
       existingEnrollment.payment = enrollmentData.payment;
-      existingEnrollment.cancelledAt = undefined;
-      existingEnrollment.completedAt = undefined;
+      existingEnrollment.cancelledAt = null;
+      existingEnrollment.completedAt = null;
 
       enrollment = await existingEnrollment.save();
     } else {
       enrollment = await Enrollment.create(enrollmentData);
     }
 
+    // Apenas inscrições gratuitas são ativadas imediatamente.
     if (isFree) {
       await ClassModel.updateOne(
         { _id: classItem._id },
-        { $addToSet: { students: req.user._id } }
+        {
+          $addToSet: {
+            students: req.user._id
+          }
+        }
       );
+    }
+
+    // Não devolver o conteúdo base64 do comprovativo.
+    const safeEnrollment = enrollment.toObject();
+
+    if (safeEnrollment.payment?.proof) {
+      delete safeEnrollment.payment.proof.data;
     }
 
     return res.status(201).json({
       success: true,
       message: isFree
-        ? "Inscrição realizada com sucesso."
-        : "Pedido de inscrição registado. Aguarda a confirmação do pagamento.",
-      enrollment
+        ? "Inscrição realizada com sucesso. Já podes aceder às aulas."
+        : "Inscrição enviada com sucesso. O comprovativo aguarda confirmação do administrador.",
+      enrollment: safeEnrollment
     });
+
   } catch (error) {
     if (error.code === 11000) {
       return res.status(409).json({
@@ -942,7 +1094,10 @@ router.post("/classes/:id/enroll", async (req, res) => {
       });
     }
 
-    console.error("Erro ao inscrever aluno:", error.message);
+    console.error(
+      "Erro ao inscrever aluno:",
+      error.message
+    );
 
     return res.status(500).json({
       success: false,
@@ -950,7 +1105,8 @@ router.post("/classes/:id/enroll", async (req, res) => {
     });
   }
 });
-
+  
+     
 // Consultar inscrições
 router.get("/enrollments", async (req, res) => {
   try {
