@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   LiveKitRoom,
   VideoConference
@@ -13,9 +13,16 @@ function LiveRoom({ session, canManage, onClose, onEnded }) {
   const [connection, setConnection] = useState(null);
   const [loading, setLoading] = useState(true);
   const [ending, setEnding] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
   const [error, setError] = useState("");
   const [disconnected, setDisconnected] = useState(false);
   const [connectionAttempt, setConnectionAttempt] = useState(0);
+  const [recordingStatus, setRecordingStatus] = useState("");
+
+  const recordingStartedRef = useRef(false);
+  const endingHandledRef = useRef(false);
+
+  const recordingEnabled = session.recording?.enabled === true;
 
   useEffect(() => {
     let cancelled = false;
@@ -65,6 +72,54 @@ function LiveRoom({ session, canManage, onClose, onEnded }) {
     };
   }, [session._id, session.status, canManage, connectionAttempt]);
 
+  async function handleRoomConnected() {
+    setDisconnected(false);
+
+    // Apenas o formador ou administrador pode iniciar a gravação.
+    if (!canManage || !recordingEnabled) return;
+
+    // Evita pedidos repetidos durante reconexões.
+    if (recordingStartedRef.current) return;
+
+    recordingStartedRef.current = true;
+    setRecordingStatus("A iniciar a gravação...");
+
+    try {
+      const response = await livekitAPI.startRecording(session._id);
+
+      if (
+        response.success === false &&
+        !response.message?.toLowerCase().includes("already")
+      ) {
+        throw new Error(
+          response.message || "Não foi possível iniciar a gravação."
+        );
+      }
+
+      setRecordingStatus("Gravação ativa.");
+    } catch (err) {
+      const message = err.message || "";
+
+      // Uma gravação já iniciada não deve ser tratada como falha.
+      if (
+        message.toLowerCase().includes("already") ||
+        message.toLowerCase().includes("in progress") ||
+        message.toLowerCase().includes("já está")
+      ) {
+        setRecordingStatus("Gravação já se encontra ativa.");
+        return;
+      }
+
+      recordingStartedRef.current = false;
+
+      setRecordingStatus(
+        "Não foi possível iniciar a gravação automaticamente."
+      );
+
+      console.error("Erro ao iniciar gravação:", err);
+    }
+  }
+
   function handleRoomError(roomError) {
     console.error("Erro LiveKit:", roomError);
 
@@ -74,10 +129,27 @@ function LiveRoom({ session, canManage, onClose, onEnded }) {
     );
   }
 
-  function handleDisconnected(reason) {
+  async function handleDisconnected(reason) {
     console.warn("LiveKit desligado:", reason);
 
     setDisconnected(true);
+
+    // Se o encerramento foi solicitado e o webhook confirmou
+    // o fim da gravação, o servidor remove a sala.
+    if (finalizing && !endingHandledRef.current) {
+      endingHandledRef.current = true;
+
+      try {
+        if (onEnded) {
+          await onEnded();
+        }
+      } catch (err) {
+        console.error("Erro ao atualizar a Academia:", err);
+      }
+
+      onClose();
+      return;
+    }
 
     setError(
       reason
@@ -104,10 +176,22 @@ function LiveRoom({ session, canManage, onClose, onEnded }) {
       setEnding(true);
       setError("");
 
-      await livekitAPI.endSession(session._id);
+      const response = await livekitAPI.endSession(session._id);
 
-      if (onEnded) {
-        await onEnded();
+      // A gravação ainda está a ser finalizada no LiveKit.
+      // A sala só deve fechar depois da confirmação do webhook.
+      if (response.pending === true) {
+        setFinalizing(true);
+        setRecordingStatus("A finalizar e guardar a gravação...");
+        return;
+      }
+
+      if (!endingHandledRef.current) {
+        endingHandledRef.current = true;
+
+        if (onEnded) {
+          await onEnded();
+        }
       }
 
       onClose();
@@ -169,28 +253,39 @@ function LiveRoom({ session, canManage, onClose, onEnded }) {
             <button
               type="button"
               className="live-room-end-button"
-              disabled={ending}
+              disabled={ending || finalizing}
               onClick={handleEndSession}
             >
-              {ending ? "A terminar..." : "Terminar aula"}
+              {finalizing
+                ? "A guardar gravação..."
+                : ending
+                  ? "A terminar..."
+                  : "Terminar aula"}
             </button>
           )}
 
           <button
             type="button"
             className="live-room-exit-button"
+            disabled={finalizing}
             onClick={onClose}
           >
-            Sair da sala
+            {finalizing ? "A aguardar..." : "Sair da sala"}
           </button>
         </div>
       </header>
+
+      {recordingStatus && (
+        <div className="live-room-error">
+          {recordingStatus}
+        </div>
+      )}
 
       {error && (
         <div className="live-room-error">
           {error}
 
-          {disconnected && (
+          {disconnected && !finalizing && (
             <button
               type="button"
               onClick={handleRetry}
@@ -210,18 +305,20 @@ function LiveRoom({ session, canManage, onClose, onEnded }) {
           connect={true}
           audio={true}
           video={true}
+          onConnected={handleRoomConnected}
           onError={handleRoomError}
           onDisconnected={handleDisconnected}
           options={{
             adaptiveStream: true,
             dynacast: true
           }}
-                >
+        >
           <VideoConference />
+
           <ParticipantRoster
-  sessionId={session._id}
-  canManage={canManage}
-/>
+            sessionId={session._id}
+            canManage={canManage}
+          />
         </LiveKitRoom>
       </main>
     </div>
