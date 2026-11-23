@@ -95,6 +95,8 @@ function Academy({ user, initialTab = "courses" }) {
   const [enrollments, setEnrollments] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [instructors, setInstructors] = useState([]);
+  const [paymentSettings, setPaymentSettings] = useState({ multicaixaExpress: { number: "", holder: "" }, bfa: { holder: "", account: "", iban: "" }, instructions: "" });
+  const [paymentSettingsLoading, setPaymentSettingsLoading] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -181,13 +183,36 @@ function Academy({ user, initialTab = "courses" }) {
     }
   }, [isAdmin]);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  useEffect(() => { loadData(); }, [loadData]);
+  const loadPaymentSettings = useCallback(async () => {
+    if (!isAdmin) return;
+    setPaymentSettingsLoading(true); setError("");
+    try {
+      const response = await academyAPI.getPaymentSettings();
+      const settings = response.settings || {};
+      setPaymentSettings({
+        multicaixaExpress: { number: settings.multicaixaExpress?.number || "", holder: settings.multicaixaExpress?.holder || "" },
+        bfa: { holder: settings.bfa?.holder || "", account: settings.bfa?.account || "", iban: settings.bfa?.iban || "" },
+        instructions: settings.instructions || ""
+      });
+    } catch (err) { setError(err.message || "Não foi possível carregar os dados de pagamento."); }
+    finally { setPaymentSettingsLoading(false); }
+  }, [isAdmin]);
+  useEffect(() => { if (activeTab === "payments" && isAdmin) loadPaymentSettings(); }, [activeTab, isAdmin, loadPaymentSettings]);
+    useEffect(() => { if (activeTab === "payments" && isAdmin) loadPaymentSettings(); }, [activeTab, isAdmin, loadPaymentSettings]);
 
-  function clearFeedback() {
-    setError("");
-    setMessage("");
+  function clearFeedback() { setError(""); setMessage(""); }
+  async function handleSavePaymentSettings(event) {
+    event.preventDefault(); setSaving(true); clearFeedback();
+    try {
+      const response = await academyAPI.updatePaymentSettings({
+        multicaixaExpress: { number: paymentSettings.multicaixaExpress.number.trim(), holder: paymentSettings.multicaixaExpress.holder.trim() },
+        bfa: { holder: paymentSettings.bfa.holder.trim(), account: paymentSettings.bfa.account.trim(), iban: paymentSettings.bfa.iban.trim() },
+        instructions: paymentSettings.instructions.trim()
+      });
+      setMessage(response.message || "Dados de pagamento guardados com sucesso."); await loadPaymentSettings();
+    } catch (err) { setError(err.message || "Não foi possível guardar os dados de pagamento."); }
+    finally { setSaving(false); }
   }
 
   function openForm() {
@@ -377,8 +402,7 @@ function Academy({ user, initialTab = "courses" }) {
       )
     );
   }
-
-  // AGENDAR AULA ONLINE
+    // AGENDAR AULA ONLINE
   async function handleCreateSession(event) {
     event.preventDefault();
     setSaving(true);
@@ -548,8 +572,7 @@ function Academy({ user, initialTab = "courses" }) {
               </button>
             </form>
           )}
-
-          {activeTab === "classes" && (
+                    {activeTab === "classes" && (
             <form onSubmit={handleCreateClass}>
               <label>Nome da turma</label>
               <input
@@ -754,20 +777,20 @@ function Academy({ user, initialTab = "courses" }) {
               />
 
               {(isAdmin || user?.role === "instructor") && (
-  <label className="academy-checkbox-label">
-    <input
-      type="checkbox"
-      checked={sessionForm.recordingEnabled}
-      onChange={(e) =>
-        setSessionForm({
-          ...sessionForm,
-          recordingEnabled: e.target.checked
-        })
-      }
-    />
-    Permitir gravação desta aula
-  </label>
-)}
+                <label className="academy-checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={sessionForm.recordingEnabled}
+                    onChange={(e) =>
+                      setSessionForm({
+                        ...sessionForm,
+                        recordingEnabled: e.target.checked
+                      })
+                    }
+                  />
+                  Permitir gravação desta aula
+                </label>
+              )}
 
               <button disabled={saving} type="submit">
                 {saving ? "A agendar..." : "Agendar aula"}
@@ -778,8 +801,7 @@ function Academy({ user, initialTab = "courses" }) {
       </div>
     );
   }
-
-  // LISTA DE ALUNOS DA TURMA
+    // LISTA DE ALUNOS DA TURMA
   function renderRoster() {
     if (!selectedRoster) return null;
 
@@ -912,7 +934,8 @@ function Academy({ user, initialTab = "courses" }) {
     { id: "courses", label: "Cursos", icon: BookOpen },
     { id: "classes", label: "Turmas", icon: Users },
     { id: "enrollments", label: "Inscrições", icon: ClipboardList },
-    { id: "sessions", label: "Aulas online", icon: Video }
+    { id: "sessions", label: "Aulas online", icon: Video },
+    ...(isAdmin ? [{ id: "payments", label: "Pagamentos", icon: ClipboardList }] : [])
   ];
 
   return (
@@ -987,8 +1010,7 @@ function Academy({ user, initialTab = "courses" }) {
           <RefreshCw size={17} />
         </button>
       </div>
-
-      <div className="academy-section-heading">
+            <div className="academy-section-heading">
         <div>
           <h2>
             {tabs.find((tab) => tab.id === activeTab)?.label}
@@ -1000,8 +1022,8 @@ function Academy({ user, initialTab = "courses" }) {
               "Consulta as turmas, os alunos e acompanha as inscrições."}
             {activeTab === "enrollments" &&
               "Acompanha os pedidos e o estado das inscrições."}
-            {activeTab === "sessions" &&
-              "Consulta e agenda sessões de videoconferência."}
+            {activeTab === "sessions" && "Consulta e agenda sessões de videoconferência."}
+            {activeTab === "payments" && "Define os dados bancários que os alunos verão ao solicitar inscrição."}
           </p>
         </div>
 
@@ -1029,6 +1051,31 @@ function Academy({ user, initialTab = "courses" }) {
         </div>
       ) : (
         <>
+          {activeTab === "payments" && isAdmin && (
+            <section className="academy-modal" style={{ maxWidth: "760px", maxHeight: "none", margin: "0 auto" }}>
+              <div className="academy-modal-heading"><div><span>ALDAIR ONE ACADEMY</span><h2>Dados para recebimento</h2></div></div>
+              {paymentSettingsLoading ? <div className="academy-loading"><RefreshCw size={22} /><span>A carregar dados de pagamento...</span></div> : (
+                <form onSubmit={handleSavePaymentSettings}>
+                  <h3 style={{ color: "#ffffff", margin: "8px 0 2px" }}>Multicaixa Express</h3>
+                  <label>Número associado ao Express</label>
+                  <input type="text" inputMode="tel" maxLength={30} value={paymentSettings.multicaixaExpress.number} onChange={(event) => setPaymentSettings((current) => ({ ...current, multicaixaExpress: { ...current.multicaixaExpress, number: event.target.value } }))} placeholder="Ex.: 923 000 000" />
+                  <label>Nome do titular do Express</label>
+                  <input type="text" maxLength={120} value={paymentSettings.multicaixaExpress.holder} onChange={(event) => setPaymentSettings((current) => ({ ...current, multicaixaExpress: { ...current.multicaixaExpress, holder: event.target.value } }))} placeholder="Nome do titular" />
+                  <h3 style={{ color: "#ffffff", margin: "18px 0 2px" }}>Transferência bancária — BFA</h3>
+                  <label>Nome do titular da conta</label>
+                  <input type="text" maxLength={120} value={paymentSettings.bfa.holder} onChange={(event) => setPaymentSettings((current) => ({ ...current, bfa: { ...current.bfa, holder: event.target.value } }))} placeholder="Nome do titular" />
+                  <label>Número da conta</label>
+                  <input type="text" maxLength={50} value={paymentSettings.bfa.account} onChange={(event) => setPaymentSettings((current) => ({ ...current, bfa: { ...current.bfa, account: event.target.value } }))} placeholder="Número da conta BFA" />
+                  <label>IBAN</label>
+                  <input type="text" maxLength={50} value={paymentSettings.bfa.iban} onChange={(event) => setPaymentSettings((current) => ({ ...current, bfa: { ...current.bfa, iban: event.target.value } }))} placeholder="AO06 ..." />
+                  <label>Instruções para o aluno</label>
+                  <textarea maxLength={1000} value={paymentSettings.instructions} onChange={(event) => setPaymentSettings((current) => ({ ...current, instructions: event.target.value }))} placeholder="Indica o nome e o curso na descrição do pagamento." />
+                  <button disabled={saving} type="submit">{saving ? "A guardar..." : "Guardar dados de pagamento"}</button>
+                </form>
+              )}
+            </section>
+          )}
+
           {/* CURSOS */}
           {activeTab === "courses" && (
             <div className="academy-card-grid">
@@ -1148,6 +1195,7 @@ function Academy({ user, initialTab = "courses" }) {
                           onChange={(e) =>
                             handleClassStatus(classItem, e.target.value)
                           }
+                                                    }
                           aria-label={`Estado de ${classItem.name}`}
                         >
                           <option value="draft">Rascunho</option>
