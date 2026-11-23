@@ -944,3 +944,226 @@ button {
     font-size: 27px;
   }
 }
+
+/* =====================================================
+   ALDAIR ONE — HERO PROFISSIONAL COM FOTOGRAFIA
+   Responsividade: computador, tablet e telemóvel
+===================================================== */
+
+/* Apresentação principal */
+
+.hero {
+  grid-template-columns: 1.08fr 0.92fr;
+  align-items: center;
+  gap: 55px;
+  min-height: 690px;
+  padding-top: 75px;
+  padding-bottom: 75px;
+}
+
+.hero-content {
+  max-width: 680px;
+  position: relative;
+  z-index: 2;
+}
+
+.hero h1 {
+  font-size: clamp(46px, 5.5vw, 72px);
+  line-height: 1.08;
+  letter-spacing: -2.8px;
+}
+
+.hero-description {
+  max-width: 540px;
+  font-size: 15px;
+  line-height: 1.9;
+}
+
+/* Área da fotografia */
+
+.hero-visual {
+  width: 100%;
+  height: auto;
+  min-height: 500px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.hero-photo-frame {
+  width: 100%;
+  max-width: 430px;
+  aspect-ratio: 4 / 5;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(110, 170, 255, 0.35);
+  border-radius: 24px;
+  background: linear-gradient(145deg, #172b4a, #0b1423);
+  box-shadow:
+    0 25px 80px rgba(0, 0, 0, 0.4),
+    0 0 55px rgba(86, 215, 238, 0.10);
+  transition:
+    transform 0.35s ease,
+    box-shadow 0.35s ease;
+}
+
+.hero-photo-frame:hover {
+  transform: translateY(-6px);
+  box-shadow:
+    0 32px 90px rgba(0, 0, 0, 0.45),
+    0 0 65px rgba(86, 215, 238, 0.16);
+}
+
+.hero-profile-photo {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center 20%;
+}
+
+/* Identificação sobre a fotografia */
+
+.hero-photo-caption {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  background: rgba(7, 13, 25, 0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.hero-photo-caption strong,
+.hero-photo-caption small {
+  display: block;
+}
+
+.hero-photo-caption strong {
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.hero-photo-caption small {
+  margin-top: 5px;
+  color: #9ba9bd;
+  font-size: 9px;
+  letter-spacing: 1.2px;
+}
+
+/* Animação suave */
+
+.hero-photo-frame {
+  animation: heroPhotoEntrance 0.8s ease both;
+}
+
+@keyframes heroPhotoEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Tablet */
+
+@media (max-width: 1000px) {
+  .hero {
+    gap: 35px;
+    min-height: 600px;
+  }
+
+  .hero h1 {
+    font-size: clamp(42px, 5.5vw, 60px);
+  }
+
+  .hero-visual {
+    min-height: 420px;
+  }
+
+  .hero-photo-frame {
+    max-width: 370px;
+  }
+}
+
+/* Telemóveis */
+
+@media (max-width: 760px) {
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 35px;
+    min-height: auto;
+    padding-top: 65px;
+    padding-bottom: 55px;
+  }
+
+  .hero-content {
+    max-width: 100%;
+  }
+
+  .hero h1 {
+    font-size: clamp(43px, 10vw, 62px);
+    letter-spacing: -2px;
+  }
+
+  .hero-description {
+    font-size: 14px;
+    line-height: 1.8;
+  }
+
+  .hero-visual {
+    min-height: auto;
+    padding: 0 8px 15px;
+  }
+
+  .hero-photo-frame {
+    width: 100%;
+    max-width: 390px;
+  }
+
+  .hero-photo-caption {
+    left: 14px;
+    right: 14px;
+    bottom: 14px;
+  }
+}
+
+/* Telemóveis pequenos */
+
+@media (max-width: 400px) {
+  .hero {
+    gap: 28px;
+  }
+
+  .hero h1 {
+    font-size: 40px;
+    letter-spacing: -1.5px;
+  }
+
+  .hero-photo-caption {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    padding: 12px;
+  }
+
+  .hero-photo-caption strong {
+    font-size: 11px;
+  }
+
+  .hero-photo-caption small {
+    font-size: 8px;
+  }
+}
