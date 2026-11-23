@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import Course from "../models/Course.js";
 import ClassModel from "../models/Class.js";
 import Enrollment from "../models/Enrollment.js";
+import PaymentSettings from "../models/PaymentSettings.js";
 import LiveSession from "../models/LiveSession.js";
 
 import {
@@ -51,7 +52,107 @@ function canManageClass(user, classItem) {
     )
   );
 }
+// ==========================================
+// CONFIGURAÇÃO DE PAGAMENTOS
+// ==========================================
 
+// Consultar dados de pagamento
+// Alunos autenticados também podem consultar estes dados.
+router.get("/payment-settings", async (req, res) => {
+  try {
+    const settings = await PaymentSettings.findOne().lean();
+
+    return res.json({
+      success: true,
+      settings: settings || {
+        multicaixaExpress: {
+          number: "",
+          holder: ""
+        },
+        bfa: {
+          holder: "",
+          account: "",
+          iban: ""
+        },
+        instructions:
+          "Indica o teu nome e o curso na descrição do pagamento."
+      }
+    });
+  } catch (error) {
+    console.error(
+      "Erro ao consultar dados de pagamento:",
+      error.message
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Não foi possível carregar os dados de pagamento."
+    });
+  }
+});
+
+// Guardar dados de pagamento
+router.patch(
+  "/payment-settings",
+  authorize(...ADMIN_ROLES),
+  async (req, res) => {
+    try {
+      const multicaixaExpress = {
+        number: String(
+          req.body.multicaixaExpress?.number || ""
+        ).trim(),
+        holder: String(
+          req.body.multicaixaExpress?.holder || ""
+        ).trim()
+      };
+
+      const bfa = {
+        holder: String(
+          req.body.bfa?.holder || ""
+        ).trim(),
+        account: String(
+          req.body.bfa?.account || ""
+        ).trim(),
+        iban: String(
+          req.body.bfa?.iban || ""
+        ).trim()
+      };
+
+      const instructions = String(
+        req.body.instructions || ""
+      ).trim();
+
+      let settings = await PaymentSettings.findOne();
+
+      if (!settings) {
+        settings = new PaymentSettings();
+      }
+
+      settings.multicaixaExpress = multicaixaExpress;
+      settings.bfa = bfa;
+      settings.instructions = instructions;
+      settings.updatedBy = req.user._id;
+
+      await settings.save();
+
+      return res.json({
+        success: true,
+        message: "Dados de pagamento guardados com sucesso.",
+        settings
+      });
+    } catch (error) {
+      console.error(
+        "Erro ao guardar dados de pagamento:",
+        error.message
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Não foi possível guardar os dados de pagamento."
+      });
+    }
+  }
+);
 // ==========================================
 // CURSOS
 // ==========================================
