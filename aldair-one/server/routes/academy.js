@@ -7,7 +7,7 @@ import ClassModel from "../models/Class.js";
 import Enrollment from "../models/Enrollment.js";
 import PaymentSettings from "../models/PaymentSettings.js";
 import LiveSession from "../models/LiveSession.js";
-
+import ClassMaterial from "../models/ClassMaterial.js";
 import {
   authenticate,
   authorize
@@ -1478,6 +1478,372 @@ router.patch(
       return res.status(500).json({
         success: false,
         message: "Não foi possível ativar a inscrição."
+      });
+    }
+  }
+);
+
+// ==========================================
+// MATERIAIS, DOCUMENTOS E CERTIFICADOS
+// ==========================================
+
+const MATERIAL_MAX_SIZE = 4 * 1024 * 1024;
+
+const ALLOWED_MATERIAL_TYPES = [
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+];
+
+async function getAuthorizedMaterialClass(req, res) {
+  const classId = req.params.id;
+
+  if (!validId(classId)) {
+    res.status(400).json({
+      success: false,
+      message: "Identificador da turma inválido."
+    });
+    return null;
+  }
+
+  const classItem = await ClassModel.findById(classId);
+
+  if (!classItem) {
+    res.status(404).json({
+      success: false,
+      message: "Turma não encontrada."
+    });
+    return null;
+  }
+
+  if (isAdmin(req.user)) return classItem;
+
+  if (isInstructor(req.user)) {
+    if (!canManageClass(req.user, classItem)) {
+      res.status(403).json({
+        success: false,
+        message: "Só podes gerir materiais das tuas próprias turmas."
+      });
+      return null;
+    }
+
+    return classItem;
+  }
+
+  const enrollment = await Enrollment.findOne({
+    class: classItem._id,
+    student: req.user._id,
+    status: "active"
+  }).select("_id");
+
+  if (!enrollment) {
+    res.status(403).json({
+      success: false,
+      message: "É necessário ter inscrição ativa nesta turma."
+    });
+    return null;
+  }
+
+  return classItem;
+}
+
+// Listar materiais de uma turma
+router.get("/classes/:id/materials", async (req, res) => {
+  try {
+    const classItem = await getAuthorizedMaterialClass(req, res);
+    if (!classItem) return;
+
+    const filter = {
+      class: classItem._id
+    };
+
+    if (req.user.role === "student") {
+      filter.$or = [
+        { type: { $in: ["course", "lesson"] } },
+        { type: "certificate", student: req.user._id }
+      ];
+    }
+
+    const materials = await ClassMaterial.find(filter)
+      .select("-data")
+      .populate("uploadedBy", "name")
+      .populate("student", "name email")
+      .sort({ type: 1, createdAt: -1 })
+      .lean();
+
+    return res.json({
+      success: true,
+      materials
+    });
+  } catch (error) {
+    console.error("Erro ao listar materiais:", error.message);
+
+    return res.status(500).json({
+      success: false,
+      message: "Não foi possível carregar os materiais."
+    });
+  }
+});
+
+// Publicar material ou certificado
+router.post(
+  "/classes/:id/materials",
+  authorize(...TEACHING_ROLES),
+  async (req, res) => {
+    try {
+      const classItem = await getAuthorizedMaterialClass(req, res);
+      if (!classItem) return;
+
+      const {
+        type,
+        studentId,
+        title,
+        description,
+        originalName,
+        mimeType,
+        data
+      } = req.body;
+
+      if (!["course", "lesson", "certificate"].includes(type)) {
+        return res.status(400).json({
+          success: false,
+          message: "Tipo de material inválido."
+        });
+      }
+
+      if (
+        !title ||
+        !originalName ||
+        !mimeType ||
+        typeof data !== "string"
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Preenche os dados e seleciona um ficheiro."
+        });
+      }
+
+      if (!ALLOWED_MATERIAL_TYPES.includes(mimeType)) {
+        return res.status(400).json({
+          success: false,
+          message: "Formato não permitido. Usa PDF, imagem ou documento Word."
+        });
+      }
+
+      const base64 = data.replace(/^data:[^;]+;base64,/, "");
+
+      if (!/^[A-Za-z0-9+/]*={0,2}$/.test(base64)) {
+        return res.status(400).json({
+          success: false,
+          message: "O ficheiro enviado é inválido."
+        });
+      }
+
+      const fileSize = Buffer.from(base64, "base64").length;
+
+      if (!fileSize || fileSize > MATERIAL_MAX_SIZE) {
+        return res.status(400).json({
+          success: false,
+          message: "O ficheiro deve ter no máximo 4 MB."
+        });
+      }
+
+      let certificateStudent = null;
+
+      if (type === "certificate") {
+        if (!studentId || !validId(studentId)) {
+          return res.status(400).json({
+            success: false,
+            message: "Seleciona o aluno que receberá o certificado."
+          });
+        }
+
+        const enrollment = await Enrollment.findOne({
+          class: classItem._id,
+          student: studentId,
+          status: { $in: ["active", "completed"] }
+        }).select("_id");
+
+        if (!enrollment) {
+          return res.status(400).json({
+            success: false,
+            message: "O aluno não tem inscrição ativa ou concluída nesta turma."
+          });
+        }
+
+        certificateStudent = studentId;
+      }
+
+      const material = await ClassMaterial.create({
+        class: classItem._id,
+        course: classItem.course,
+        type,
+        student: certificateStudent,
+        title: String(title).trim().slice(0, 180),
+        description: String(description || "").trim().slice(0, 1000),
+        originalName: String(originalName).trim().slice(0, 255),
+        mimeType,
+        size: fileSize,
+        data: base64,
+        uploadedBy: req.user._id
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: type === "certificate"
+          ? "Certificado disponibilizado ao aluno."
+          : "Material publicado com sucesso.",
+        material: {
+          _id: material._id,
+          title: material.title,
+          type: material.type,
+          originalName: material.originalName,
+          size: material.size,
+          createdAt: material.createdAt
+        }
+      });
+    } catch (error) {
+      console.error("Erro ao publicar material:", error.message);
+
+      return res.status(500).json({
+        success: false,
+        message: "Não foi possível publicar o material."
+      });
+    }
+  }
+);
+
+// Consultar ou descarregar ficheiro
+router.get("/materials/:materialId/file", async (req, res) => {
+  try {
+    if (!validId(req.params.materialId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Identificador do material inválido."
+      });
+    }
+
+    const material = await ClassMaterial.findById(
+      req.params.materialId
+    );
+
+    if (!material) {
+      return res.status(404).json({
+        success: false,
+        message: "Material não encontrado."
+      });
+    }
+
+    const classItem = await ClassModel.findById(material.class);
+
+    if (!classItem) {
+      return res.status(404).json({
+        success: false,
+        message: "Turma não encontrada."
+      });
+    }
+
+    if (!isAdmin(req.user)) {
+      if (isInstructor(req.user)) {
+        if (!canManageClass(req.user, classItem)) {
+          return res.status(403).json({
+            success: false,
+            message: "Não tens autorização para consultar este ficheiro."
+          });
+        }
+      } else {
+        const enrollment = await Enrollment.findOne({
+          class: classItem._id,
+          student: req.user._id,
+          status: "active"
+        }).select("_id");
+
+        if (!enrollment) {
+          return res.status(403).json({
+            success: false,
+            message: "Não tens inscrição ativa nesta turma."
+          });
+        }
+
+        if (
+          material.type === "certificate" &&
+          material.student?.toString() !== req.user._id.toString()
+        ) {
+          return res.status(403).json({
+            success: false,
+            message: "Este certificado pertence a outro aluno."
+          });
+        }
+      }
+    }
+
+    return res.json({
+      success: true,
+      file: {
+        originalName: material.originalName,
+        mimeType: material.mimeType,
+        size: material.size,
+        data: material.data
+      }
+    });
+  } catch (error) {
+    console.error("Erro ao consultar ficheiro:", error.message);
+
+    return res.status(500).json({
+      success: false,
+      message: "Não foi possível consultar o ficheiro."
+    });
+  }
+});
+
+// Remover material publicado
+router.delete(
+  "/materials/:materialId",
+  authorize(...TEACHING_ROLES),
+  async (req, res) => {
+    try {
+      if (!validId(req.params.materialId)) {
+        return res.status(400).json({
+          success: false,
+          message: "Identificador inválido."
+        });
+      }
+
+      const material = await ClassMaterial.findById(
+        req.params.materialId
+      );
+
+      if (!material) {
+        return res.status(404).json({
+          success: false,
+          message: "Material não encontrado."
+        });
+      }
+
+      const classItem = await ClassModel.findById(material.class);
+
+      if (!classItem || !canManageClass(req.user, classItem)) {
+        return res.status(403).json({
+          success: false,
+          message: "Não tens autorização para remover este material."
+        });
+      }
+
+      await material.deleteOne();
+
+      return res.json({
+        success: true,
+        message: "Material removido com sucesso."
+      });
+    } catch (error) {
+      console.error("Erro ao remover material:", error.message);
+
+      return res.status(500).json({
+        success: false,
+        message: "Não foi possível remover o material."
       });
     }
   }
