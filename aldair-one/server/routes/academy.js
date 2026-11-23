@@ -1127,6 +1127,7 @@ router.get("/enrollments", async (req, res) => {
     }
 
     const enrollments = await Enrollment.find(filter)
+      .select("-payment.proof.data")
       .populate("student", "name email")
       .populate("course", "title category")
       .populate("class", "name startDate endDate")
@@ -1146,7 +1147,58 @@ router.get("/enrollments", async (req, res) => {
     });
   }
 });
+// Consultar comprovativo de pagamento — apenas administradores
+router.get(
+  "/enrollments/:id/proof",
+  authorize(...ADMIN_ROLES),
+  async (req, res) => {
+    try {
+      if (!validId(req.params.id)) {
+        return res.status(400).json({
+          success: false,
+          message: "Identificador de inscrição inválido."
+        });
+      }
 
+      const enrollment = await Enrollment.findById(req.params.id)
+        .select("payment.proof");
+
+      if (!enrollment) {
+        return res.status(404).json({
+          success: false,
+          message: "Inscrição não encontrada."
+        });
+      }
+
+      const proof = enrollment.payment?.proof;
+
+      if (!proof?.data) {
+        return res.status(404).json({
+          success: false,
+          message: "Esta inscrição ainda não tem comprovativo."
+        });
+      }
+
+      return res.json({
+        success: true,
+        proof: {
+          originalName: proof.originalName,
+          mimeType: proof.mimeType,
+          data: proof.data,
+          submittedAt: proof.submittedAt,
+          reviewStatus: proof.reviewStatus
+        }
+      });
+    } catch (error) {
+      console.error("Erro ao consultar comprovativo:", error.message);
+
+      return res.status(500).json({
+        success: false,
+        message: "Não foi possível consultar o comprovativo."
+      });
+    }
+  }
+);
 // ==========================================
 // ACOMPANHAMENTO DO PROGRESSO DO ALUNO
 // ==========================================
@@ -1342,29 +1394,40 @@ router.patch(
       }
 
       const alreadyAdded = classItem.students.some(
-        student => student.toString() === enrollment.student.toString()
+        student =>
+          student.toString() === enrollment.student.toString()
       );
 
-      // Contar também outros pedidos pendentes que reservam vagas.
-      const pendingEnrollments = await Enrollment.find({
-        class: classItem._id,
-        status: "pending",
-        _id: { $ne: enrollment._id }
-      })
-        .select("student")
-        .lean();
-
-      const occupiedStudents = new Set(
-        classItem.students.map(student => student.toString())
-      );
-
-      for (const item of pendingEnrollments) {
-        occupiedStudents.add(item.student.toString());
+      // Evitar repetir uma ativação já concluída.
+      if (enrollment.status === "active" && alreadyAdded) {
+        return res.json({
+          success: true,
+          message: "Esta inscrição já está ativa."
+        });
       }
+
+      // Inscrições pagas precisam de comprovativo submetido.
+      const paymentStatus = enrollment.payment?.status;
+
+      if (paymentStatus !== "not_required") {
+        const proof = enrollment.payment?.proof;
+
+        if (!proof?.data || proof.reviewStatus !== "pending") {
+          return res.status(400).json({
+            success: false,
+            message:
+              "Não é possível ativar: falta um comprovativo pendente de aprovação."
+          });
+        }
+      }
+
+      // Apenas alunos já adicionados ocupam vagas.
+      const capacity = Number(classItem.capacity || 0);
 
       if (
         !alreadyAdded &&
-        occupiedStudents.size >= Number(classItem.capacity || 0)
+        capacity > 0 &&
+        classItem.students.length >= capacity
       ) {
         return res.status(409).json({
           success: false,
@@ -1372,24 +1435,43 @@ router.patch(
         });
       }
 
-      enrollment.status = "active";
-
-      if (enrollment.payment.status !== "not_required") {
+      // Confirmar pagamento, quando aplicável.
+      if (paymentStatus !== "not_required") {
         enrollment.payment.status = "paid";
         enrollment.payment.paidAt = new Date();
+
+        enrollment.payment.proof.reviewStatus = "approved";
+        enrollment.payment.proof.reviewedAt = new Date();
+        enrollment.payment.proof.reviewedBy = req.user._id;
       }
+
+      enrollment.status = "active";
 
       await enrollment.save();
 
       await ClassModel.updateOne(
         { _id: classItem._id },
-        { $addToSet: { students: enrollment.student } }
+        {
+          $addToSet: {
+            students: enrollment.student
+          }
+        }
       );
 
       return res.json({
         success: true,
-        message: "Inscrição ativada com sucesso.",
-        enrollment
+        message: "Pagamento confirmado e inscrição ativada com sucesso.",
+        enrollment: {
+          _id: enrollment._id,
+          status: enrollment.status,
+          payment: {
+            status: enrollment.payment.status,
+            amount: enrollment.payment.amount,
+            currency: enrollment.payment.currency,
+            method: enrollment.payment.method,
+            paidAt: enrollment.payment.paidAt
+          }
+        }
       });
     } catch (error) {
       console.error("Erro ao ativar inscrição:", error.message);
