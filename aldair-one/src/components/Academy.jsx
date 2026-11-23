@@ -17,7 +17,10 @@ import {
   Eye,
   Mail,
   UserCheck,
-  UserX
+  UserX,
+    FileText,
+  Download,
+  Trash2
 } from "lucide-react";
 
 import { academyAPI, adminAPI } from "../services/api";
@@ -114,7 +117,20 @@ function Academy({ user, initialTab = "courses" }) {
 
   // ESTADO DA VIDEOCONFERÊNCIA LIVEKIT
   const [selectedSession, setSelectedSession] = useState(null);
+   // MATERIAIS, DOCUMENTOS E CERTIFICADOS
+  const [selectedMaterialClass, setSelectedMaterialClass] = useState(null);
+  const [classMaterials, setClassMaterials] = useState([]);
+  const [materialStudents, setMaterialStudents] = useState([]);
+  const [materialsLoading, setMaterialsLoading] = useState(false);
+  const [materialSaving, setMaterialSaving] = useState(false);
+  const [selectedMaterialFile, setSelectedMaterialFile] = useState(null);
 
+  const [materialForm, setMaterialForm] = useState({
+    type: "course",
+    title: "",
+    description: "",
+    studentId: ""
+  });
   const [courseForm, setCourseForm] = useState({
     title: "",
     summary: "",
@@ -257,7 +273,186 @@ function Academy({ user, initialTab = "courses" }) {
     setSelectedRoster(null);
     setRosterError("");
   }
+  // ABRIR MATERIAIS DE UMA TURMA
+  async function handleOpenMaterials(classItem) {
+    setSelectedMaterialClass(classItem);
+    setClassMaterials([]);
+    setMaterialStudents([]);
+    setSelectedMaterialFile(null);
+    setMaterialForm({
+      type: "course",
+      title: "",
+      description: "",
+      studentId: ""
+    });
 
+    setMaterialsLoading(true);
+    clearFeedback();
+
+    try {
+      const response = await academyAPI.getClassMaterials(classItem._id);
+      setClassMaterials(response.materials || []);
+
+      if (canTeach) {
+        const rosterResponse = await academyAPI.getClassRoster(classItem._id);
+
+        const eligibleStudents = (rosterResponse.enrollments || [])
+          .filter((item) =>
+            ["active", "completed"].includes(item.status)
+          );
+
+        setMaterialStudents(eligibleStudents);
+      }
+    } catch (err) {
+      setError(err.message || "Não foi possível carregar os materiais.");
+      setSelectedMaterialClass(null);
+    } finally {
+      setMaterialsLoading(false);
+    }
+  }
+
+  // PUBLICAR MATERIAL OU CERTIFICADO
+  async function handleUploadMaterial(event) {
+    event.preventDefault();
+
+    if (!selectedMaterialClass || !selectedMaterialFile) {
+      setError("Seleciona primeiro o ficheiro que pretendes publicar.");
+      return;
+    }
+
+    if (
+      selectedMaterialFile.size > 4 * 1024 * 1024
+    ) {
+      setError("O ficheiro não pode ultrapassar 4 MB.");
+      return;
+    }
+
+    if (
+      materialForm.type === "certificate" &&
+      !materialForm.studentId
+    ) {
+      setError("Seleciona o aluno que receberá o certificado.");
+      return;
+    }
+
+    setMaterialSaving(true);
+    clearFeedback();
+
+    try {
+      const reader = new FileReader();
+
+      const fileData = await new Promise((resolve, reject) => {
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () =>
+          reject(new Error("Não foi possível ler o ficheiro."));
+
+        reader.readAsDataURL(selectedMaterialFile);
+      });
+
+      const response = await academyAPI.uploadClassMaterial(
+        selectedMaterialClass._id,
+        {
+          type: materialForm.type,
+          studentId: materialForm.type === "certificate"
+            ? materialForm.studentId
+            : undefined,
+          title: materialForm.title.trim(),
+          description: materialForm.description.trim(),
+          originalName: selectedMaterialFile.name,
+          mimeType: selectedMaterialFile.type,
+          data: fileData
+        }
+      );
+
+      setMessage(response.message || "Material publicado com sucesso.");
+
+      setSelectedMaterialFile(null);
+      setMaterialForm({
+        type: "course",
+        title: "",
+        description: "",
+        studentId: ""
+      });
+
+      const updated = await academyAPI.getClassMaterials(
+        selectedMaterialClass._id
+      );
+
+      setClassMaterials(updated.materials || []);
+    } catch (err) {
+      setError(err.message || "Não foi possível publicar o material.");
+    } finally {
+      setMaterialSaving(false);
+    }
+  }
+
+  // ABRIR OU DESCARREGAR UM FICHEIRO
+  async function handleDownloadMaterial(material) {
+    clearFeedback();
+
+    const previewWindow = window.open("about:blank", "_blank");
+
+    if (!previewWindow) {
+      setError("Permite a abertura de janelas pop-up para consultar o ficheiro.");
+      return;
+    }
+
+    try {
+      const response = await academyAPI.getMaterialFile(material._id);
+      const file = response.file;
+
+      if (!file?.data) {
+        throw new Error("O ficheiro não foi encontrado.");
+      }
+
+      const binary = atob(file.data);
+      const bytes = new Uint8Array(binary.length);
+
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+
+      const blob = new Blob([bytes], {
+        type: file.mimeType || "application/octet-stream"
+      });
+
+      const objectUrl = URL.createObjectURL(blob);
+      previewWindow.location.href = objectUrl;
+
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+    } catch (err) {
+      previewWindow.close();
+      setError(err.message || "Não foi possível abrir o ficheiro.");
+    }
+  }
+
+  // REMOVER MATERIAL
+  async function handleDeleteMaterial(materialId) {
+    if (!window.confirm("Tens a certeza de que pretendes remover este ficheiro?")) {
+      return;
+    }
+
+    clearFeedback();
+
+    try {
+      const response = await academyAPI.deleteMaterial(materialId);
+
+      setClassMaterials((current) =>
+        current.filter((item) => item._id !== materialId)
+      );
+
+      setMessage(response.message || "Material removido com sucesso.");
+    } catch (err) {
+      setError(err.message || "Não foi possível remover o material.");
+    }
+  }
+
+  function closeMaterials() {
+    setSelectedMaterialClass(null);
+    setClassMaterials([]);
+    setMaterialStudents([]);
+    setSelectedMaterialFile(null);
+  }
   async function handleCreateCourse(event) {
     event.preventDefault();
     setSaving(true);
