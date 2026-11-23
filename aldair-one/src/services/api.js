@@ -267,6 +267,17 @@ export const academyAPI = {
       }
     ),
 
+  // CONFIGURAÇÃO DE PAGAMENTOS
+
+  getPaymentSettings: () =>
+    apiRequest("/api/academy/payment-settings"),
+
+  updatePaymentSettings: (settings) =>
+    apiRequest("/api/academy/payment-settings", {
+      method: "PATCH",
+      body: JSON.stringify(settings)
+    }),
+
   // PROGRESSO
 
   updateEnrollmentProgress: (enrollmentId, lessonId) =>
@@ -297,8 +308,6 @@ export const academyAPI = {
 // ==========================================
 
 export const livekitAPI = {
-  // INICIAR A AULA
-
   startSession: (sessionId) =>
     apiRequest(
       `/api/livekit/sessions/${encodeURIComponent(sessionId)}/start`,
@@ -306,8 +315,6 @@ export const livekitAPI = {
         method: "POST"
       }
     ),
-
-  // INICIAR GRAVAÇÃO MP4
 
   startRecording: (sessionId) =>
     apiRequest(
@@ -317,8 +324,6 @@ export const livekitAPI = {
       }
     ),
 
-  // GERAR TOKEN DE ACESSO
-
   getAccessToken: (sessionId) =>
     apiRequest(
       `/api/livekit/sessions/${encodeURIComponent(sessionId)}/token`,
@@ -326,8 +331,6 @@ export const livekitAPI = {
         method: "POST"
       }
     ),
-
-  // TERMINAR A AULA
 
   endSession: (sessionId) =>
     apiRequest(
@@ -337,14 +340,10 @@ export const livekitAPI = {
       }
     ),
 
-  // CONSULTAR PARTICIPANTES
-
   getParticipants: (sessionId) =>
     apiRequest(
       `/api/livekit/sessions/${encodeURIComponent(sessionId)}/participants`
     ),
-
-  // SILENCIAR OU REATIVAR MICROFONE
 
   muteParticipant: (sessionId, identity, trackSid, muted) =>
     apiRequest(
@@ -357,8 +356,6 @@ export const livekitAPI = {
         })
       }
     ),
-
-  // REMOVER PARTICIPANTE
 
   removeParticipant: (sessionId, identity) =>
     apiRequest(
