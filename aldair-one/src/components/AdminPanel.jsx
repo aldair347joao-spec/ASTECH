@@ -15,7 +15,7 @@ import {
   AlertCircle,
   CheckCircle2
 } from "lucide-react";
-
+import ServiceRequestsPanel from "./ServiceRequestsPanel";
 import { adminAPI } from "../services/api";
 import "./AdminPanel.css";
 
@@ -589,11 +589,12 @@ function AdminPanel() {
           </div>
         </div>
       </section>
+  <ServiceRequestsPanel />
 
-      <div className="admin-footer-note">
-        <ShieldCheck size={16} />
-        Área protegida por autenticação e autorização no servidor.
-      </div>
+<div className="admin-footer-note">
+  <ShieldCheck size={16} />
+  Área protegida por autenticação e autorização no servidor.
+</div>
     </div>
   );
 }
