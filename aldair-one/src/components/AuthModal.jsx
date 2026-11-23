@@ -4,9 +4,9 @@ import {
   X,
   ArrowRight,
   LockKeyhole,
-  UserRound,
-  ShieldCheck
+  UserRound
 } from "lucide-react";
+
 import { authAPI } from "../services/api";
 import "./AuthModal.css";
 
@@ -16,32 +16,24 @@ function AuthModal({ onClose, onAuthenticated }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [setupKey, setSetupKey] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const isRegister = mode === "register";
-  const isSuperAdmin = mode === "superadmin";
 
   function changeMode(nextMode) {
     setMode(nextMode);
     setError("");
     setPassword("");
     setConfirmPassword("");
-    setSetupKey("");
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
     setError("");
 
-    if ((isRegister || isSuperAdmin) && password !== confirmPassword) {
+    if (isRegister && password !== confirmPassword) {
       setError("As palavras-passe não coincidem.");
-      return;
-    }
-
-    if (isSuperAdmin && password.length < 12) {
-      setError("A palavra-passe deve ter pelo menos 12 caracteres.");
       return;
     }
 
@@ -50,13 +42,7 @@ function AuthModal({ onClose, onAuthenticated }) {
     try {
       let response;
 
-      if (isSuperAdmin) {
-        response = await authAPI.registerSuperAdmin({
-          name,
-          password,
-          setupKey
-        });
-      } else if (isRegister) {
+      if (isRegister) {
         response = await authAPI.register({
           name,
           email,
@@ -116,9 +102,7 @@ function AuthModal({ onClose, onAuthenticated }) {
 
         <div className="auth-heading">
           <div className="auth-icon">
-            {isSuperAdmin ? (
-              <ShieldCheck size={23} />
-            ) : isRegister ? (
+            {isRegister ? (
               <UserRound size={23} />
             ) : (
               <LockKeyhole size={23} />
@@ -126,26 +110,22 @@ function AuthModal({ onClose, onAuthenticated }) {
           </div>
 
           <h2 id="auth-title">
-            {isSuperAdmin
-              ? "Configurar conta principal"
-              : isRegister
-                ? "Criar a tua conta"
-                : "Bem-vindo de volta"}
+            {isRegister
+              ? "Criar a tua conta"
+              : "Bem-vindo de volta"}
           </h2>
 
           <p>
-            {isSuperAdmin
-              ? "Configuração inicial protegida do Super Administrador."
-              : isRegister
-                ? "Junta-te ao ecossistema ALDAIR ONE."
-                : "Inicia sessão para aceder à tua área pessoal."}
+            {isRegister
+              ? "Junta-te ao ecossistema ALDAIR ONE."
+              : "Inicia sessão para aceder à tua área pessoal."}
           </p>
         </div>
 
         <div className="auth-tabs">
           <button
             type="button"
-            className={!isRegister && !isSuperAdmin ? "active" : ""}
+            className={!isRegister ? "active" : ""}
             onClick={() => changeMode("login")}
           >
             Entrar
@@ -158,18 +138,10 @@ function AuthModal({ onClose, onAuthenticated }) {
           >
             Criar conta
           </button>
-
-          <button
-            type="button"
-            className={isSuperAdmin ? "active" : ""}
-            onClick={() => changeMode("superadmin")}
-          >
-            Conta principal
-          </button>
         </div>
 
         <form className="auth-form" onSubmit={handleSubmit}>
-          {(isRegister || isSuperAdmin) && (
+          {isRegister && (
             <label>
               Nome completo
               <input
@@ -185,29 +157,17 @@ function AuthModal({ onClose, onAuthenticated }) {
             </label>
           )}
 
-          {isSuperAdmin ? (
-            <label>
-              Email reservado
-              <input
-                type="email"
-                value="aldair347joao@gmail.com"
-                readOnly
-                disabled
-              />
-            </label>
-          ) : (
-            <label>
-              Email
-              <input
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="nome@email.com"
-                autoComplete="email"
-                required
-              />
-            </label>
-          )}
+          <label>
+            Email
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="nome@email.com"
+              autoComplete="email"
+              required
+            />
+          </label>
 
           <label>
             Palavra-passe
@@ -215,58 +175,32 @@ function AuthModal({ onClose, onAuthenticated }) {
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              placeholder={
-                isSuperAdmin
-                  ? "Mínimo de 12 caracteres"
-                  : "Mínimo de 8 caracteres"
-              }
-              minLength={isSuperAdmin ? 12 : 8}
+              placeholder="Mínimo de 8 caracteres"
+              minLength={8}
               maxLength={128}
               autoComplete={
-                isRegister || isSuperAdmin
-                  ? "new-password"
-                  : "current-password"
+                isRegister ? "new-password" : "current-password"
               }
               required
             />
           </label>
 
-          {(isRegister || isSuperAdmin) && (
+          {isRegister && (
             <label>
               Confirmar palavra-passe
               <input
                 type="password"
                 value={confirmPassword}
-                onChange={(event) => setConfirmPassword(event.target.value)}
+                onChange={(event) =>
+                  setConfirmPassword(event.target.value)
+                }
                 placeholder="Repete a palavra-passe"
-                minLength={isSuperAdmin ? 12 : 8}
+                minLength={8}
                 maxLength={128}
                 autoComplete="new-password"
                 required
               />
             </label>
-          )}
-
-          {isSuperAdmin && (
-            <>
-              <label>
-                Chave de configuração
-                <input
-                  type="password"
-                  value={setupKey}
-                  onChange={(event) => setSetupKey(event.target.value)}
-                  placeholder="Introduz a chave configurada no Render"
-                  autoComplete="off"
-                  required
-                />
-              </label>
-
-              <p className="auth-terms">
-                Esta configuração é exclusiva da conta principal. A chave
-                corresponde à variável SUPER_ADMIN_SETUP_KEY do servidor.
-                Depois da criação, será necessário confirmar o email.
-              </p>
-            </>
           )}
 
           {error && (
@@ -282,21 +216,17 @@ function AuthModal({ onClose, onAuthenticated }) {
           >
             {loading
               ? "A processar..."
-              : isSuperAdmin
-                ? "Criar conta principal"
-                : isRegister
-                  ? "Criar conta"
-                  : "Entrar"}
+              : isRegister
+                ? "Criar conta"
+                : "Entrar"}
 
             {!loading && <ArrowRight size={18} />}
           </button>
         </form>
 
-        {!isSuperAdmin && (
-          <p className="auth-terms">
-            ALDAIR ONE — One Platform. Multiple Solutions.
-          </p>
-        )}
+        <p className="auth-terms">
+          ALDAIR ONE — One Platform. Multiple Solutions.
+        </p>
       </section>
     </div>
   );
