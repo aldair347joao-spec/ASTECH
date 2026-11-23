@@ -3,7 +3,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
-
+import servicesRoutes from "./routes/services.js";
 import { connectDatabase } from "./config/database.js";
 import authRoutes from "./routes/auth.js";
 import adminRoutes from "./routes/admin.js";
@@ -81,7 +81,8 @@ app.use("/api/admin", adminRoutes);
 
 // Academia: cursos, turmas, inscrições e aulas online
 app.use("/api/academy", academyRoutes);
-
+// Pedidos de serviços tecnológicos
+app.use("/api/services", servicesRoutes);
 // Videoconferência LiveKit
 app.use("/api/livekit", livekitRoutes);
 
