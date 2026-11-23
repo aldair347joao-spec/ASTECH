@@ -6,8 +6,6 @@ import {
   Menu,
   X,
   Code2,
-  Bot,
-  Database,
   GraduationCap,
   BriefcaseBusiness,
   Workflow,
@@ -206,6 +204,7 @@ function App() {
           className="mobile-menu"
           onClick={() => setMenuOpen(!menuOpen)}
           aria-label="Abrir menu"
+          aria-expanded={menuOpen}
         >
           {menuOpen ? <X /> : <Menu />}
         </button>
@@ -259,6 +258,7 @@ function App() {
       </header>
 
       <main>
+        {/* APRESENTAÇÃO PRINCIPAL */}
         <section className="hero section" id="inicio">
           <div className="hero-content">
             <div className="eyebrow">
@@ -301,33 +301,29 @@ function App() {
             </div>
           </div>
 
+          {/* FOTOGRAFIA PROFISSIONAL */}
           <div className="hero-visual">
-            <div className="orbit orbit-one" />
-            <div className="orbit orbit-two" />
+            <div className="hero-photo-frame">
+              <img
+                src="/aldair-profile.jpg"
+                alt="Aldair João Francisco"
+                className="hero-profile-photo"
+                loading="eager"
+              />
 
-            <div className="visual-core">
-              <span className="core-a">A</span>
-              <span className="core-name">ALDAIR ONE</span>
-              <span className="core-caption">ONE PLATFORM</span>
-            </div>
+              <div className="hero-photo-caption">
+                <span className="status-dot" />
 
-            <div className="floating-card card-top">
-              <Bot size={20} />
-              <span>Inteligência Artificial</span>
-            </div>
-
-            <div className="floating-card card-bottom">
-              <Code2 size={20} />
-              <span>Desenvolvimento</span>
-            </div>
-
-            <div className="floating-card card-side">
-              <Database size={20} />
-              <span>Dados & Sistemas</span>
+                <div>
+                  <strong>Aldair João Francisco</strong>
+                  <small>DESENVOLVEDOR FULL STACK</small>
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
+        {/* INDICADORES */}
         <section className="metrics">
           <div>
             <strong>01</strong>
@@ -345,6 +341,7 @@ function App() {
           </div>
         </section>
 
+        {/* SOBRE */}
         <section className="section about" id="sobre">
           <div className="section-heading">
             <span className="section-label">01 — SOBRE</span>
@@ -393,6 +390,7 @@ function App() {
           </div>
         </section>
 
+        {/* SERVIÇOS */}
         <section className="section services" id="servicos">
           <div className="section-heading">
             <span className="section-label">02 — SERVIÇOS</span>
@@ -428,6 +426,7 @@ function App() {
           </div>
         </section>
 
+        {/* PROJETOS */}
         <section className="section projects" id="projetos">
           <div className="section-heading">
             <span className="section-label">03 — PROJETOS</span>
@@ -464,6 +463,7 @@ function App() {
           </div>
         </section>
 
+        {/* ACADEMIA */}
         <section className="academy" id="academia">
           <div className="academy-icon">
             <GraduationCap size={35} />
@@ -504,6 +504,7 @@ function App() {
           <div className="academy-decoration">ONE</div>
         </section>
 
+        {/* CONTACTO */}
         <section className="section contact" id="contacto">
           <div className="section-heading">
             <span className="section-label">05 — CONTACTO</span>
@@ -564,6 +565,7 @@ function App() {
         </section>
       </main>
 
+      {/* RODAPÉ */}
       <footer className="footer">
         <a href="#inicio" className="brand footer-brand">
           <span className="brand-mark">A</span>
@@ -583,6 +585,7 @@ function App() {
         </a>
       </footer>
 
+      {/* AUTENTICAÇÃO */}
       {authOpen && (
         <AuthModal
           onClose={() => setAuthOpen(false)}
