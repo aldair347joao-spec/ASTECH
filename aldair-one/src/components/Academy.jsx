@@ -410,6 +410,52 @@ function Academy({ user, initialTab = "courses" }) {
       setError(err.message || "Não foi possível carregar os dados de pagamento.");
     }
   }
+  
+  async function handleViewEnrollmentProof(enrollmentId) {
+    clearFeedback();
+
+    // Abrir a janela diretamente no clique para evitar bloqueio de pop-ups.
+    const previewWindow = window.open("about:blank", "_blank");
+
+    if (!previewWindow) {
+      setError("Permite a abertura de janelas pop-up para visualizar o comprovativo.");
+      return;
+    }
+
+    try {
+      previewWindow.document.title = "A carregar comprovativo...";
+
+      const response = await academyAPI.getEnrollmentProof(enrollmentId);
+      const proof = response.proof;
+
+      if (!proof?.data) {
+        throw new Error("Comprovativo não encontrado.");
+      }
+
+      const binary = atob(proof.data);
+      const bytes = new Uint8Array(binary.length);
+
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+
+      const mimeType = proof.mimeType || "application/pdf";
+      const blob = new Blob([bytes], { type: mimeType });
+      const objectUrl = URL.createObjectURL(blob);
+
+      previewWindow.location.href = objectUrl;
+
+      // Libertar o endereço temporário após algum tempo.
+      setTimeout(() => {
+        URL.revokeObjectURL(objectUrl);
+      }, 60000);
+
+    } catch (err) {
+      previewWindow.close();
+      setError(err.message || "Não foi possível abrir o comprovativo.");
+    }
+  }
+
   async function handleActivateEnrollment(enrollmentId) {
     clearFeedback();
 
@@ -1497,23 +1543,41 @@ function Academy({ user, initialTab = "courses" }) {
                       </div>
                     </div>
 
-                    <div className="academy-list-actions">
-                      <span
-                        className={`academy-status ${enrollment.status}`}
-                      >
-                        {enrollment.status}
-                      </span>
+                    
+<div className="academy-list-actions">
+  <span
+    className={`academy-status ${enrollment.status}`}
+  >
+    {statusLabel(enrollment.status)}
+  </span>
 
-                      {isAdmin && enrollment.status === "pending" && (
-                        <button
-                          onClick={() =>
-                            handleActivateEnrollment(enrollment._id)
-                          }
-                        >
-                          Ativar inscrição
-                        </button>
-                      )}
-                    </div>
+  {isAdmin &&
+    enrollment.status === "pending" &&
+    Number(enrollment.payment?.amount || 0) > 0 && (
+      <button
+        type="button"
+        onClick={() =>
+          handleViewEnrollmentProof(enrollment._id)
+        }
+      >
+        <Eye size={15} />
+        Ver comprovativo
+      </button>
+    )}
+
+  {isAdmin && enrollment.status === "pending" && (
+    <button
+      type="button"
+      onClick={() =>
+        handleActivateEnrollment(enrollment._id)
+      }
+    >
+      <UserCheck size={15} />
+      Confirmar pagamento e ativar
+    </button>
+  )}
+</div>
+
 
                     {isStudent &&
                       ["active", "completed"].includes(enrollment.status) && (
