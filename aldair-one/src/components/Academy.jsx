@@ -1909,22 +1909,24 @@ function Academy({ user, initialTab = "courses" }) {
                         {classItem.status}
                       </span>
 
-                      {canTeach && (
-                        <button
-                          type="button"
-                          onClick={() => handleViewRoster(classItem)}
-                        >
-                          <button
+                      
+{canTeach && (
+  <button
+    type="button"
+    onClick={() => handleViewRoster(classItem)}
+  >
+    <Eye size={15} />
+    Ver alunos
+  </button>
+)}
+
+<button
   type="button"
   onClick={() => handleOpenMaterials(classItem)}
 >
   <FileText size={15} />
   Materiais
 </button>
-                          <Eye size={15} />
-                          Ver alunos
-                        </button>
-                      )}
 
                                             {isStudent && classItem.status === "open" && (
   <button
