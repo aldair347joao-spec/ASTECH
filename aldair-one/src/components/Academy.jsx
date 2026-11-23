@@ -1413,6 +1413,260 @@ function Academy({ user, initialTab = "courses" }) {
       </div>
     );
   }
+  
+  // JANELA DE MATERIAIS, AULAS E CERTIFICADOS
+  function renderMaterialsModal() {
+    if (!selectedMaterialClass) return null;
+
+    const typeLabels = {
+      course: "Material geral do curso",
+      lesson: "Material de aula",
+      certificate: "Certificado"
+    };
+
+    return (
+      <div className="academy-modal-backdrop">
+        <section className="academy-modal">
+          <div className="academy-modal-heading">
+            <div>
+              <span>ALDAIR ONE ACADEMY</span>
+              <h2>Materiais da turma</h2>
+              <p>{selectedMaterialClass.name}</p>
+            </div>
+
+            <button
+              type="button"
+              onClick={closeMaterials}
+              aria-label="Fechar materiais"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          {canTeach && (
+            <form onSubmit={handleUploadMaterial}>
+              <h3>Publicar novo material</h3>
+
+              <label>Tipo de publicação</label>
+              <select
+                value={materialForm.type}
+                onChange={(event) =>
+                  setMaterialForm((current) => ({
+                    ...current,
+                    type: event.target.value,
+                    studentId: ""
+                  }))
+                }
+              >
+                <option value="course">
+                  Material geral do curso
+                </option>
+                <option value="lesson">
+                  Material de uma aula
+                </option>
+                <option value="certificate">
+                  Certificado de aluno
+                </option>
+              </select>
+
+              {materialForm.type === "certificate" && (
+                <>
+                  <label>Aluno que receberá o certificado</label>
+                  <select
+                    required
+                    value={materialForm.studentId}
+                    onChange={(event) =>
+                      setMaterialForm((current) => ({
+                        ...current,
+                        studentId: event.target.value
+                      }))
+                    }
+                  >
+                    <option value="">Seleciona o aluno</option>
+
+                    {materialStudents.map((item) => (
+                      <option
+                        key={item._id}
+                        value={item.student?._id}
+                      >
+                        {item.student?.name || "Aluno"} —{" "}
+                        {item.student?.email || ""}
+                      </option>
+                    ))}
+                  </select>
+
+                  {materialStudents.length === 0 && (
+                    <p>
+                      Não existem alunos ativos ou concluídos nesta turma.
+                    </p>
+                  )}
+                </>
+              )}
+
+              <label>Título</label>
+              <input
+                required
+                maxLength={180}
+                value={materialForm.title}
+                onChange={(event) =>
+                  setMaterialForm((current) => ({
+                    ...current,
+                    title: event.target.value
+                  }))
+                }
+                placeholder="Ex.: Aula 01 — Introdução"
+              />
+
+              <label>Descrição</label>
+              <textarea
+                maxLength={1000}
+                value={materialForm.description}
+                onChange={(event) =>
+                  setMaterialForm((current) => ({
+                    ...current,
+                    description: event.target.value
+                  }))
+                }
+                placeholder="Informações sobre este ficheiro..."
+              />
+
+              <label>Selecionar documento ou imagem</label>
+              <input
+                type="file"
+                required
+                accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"
+                onChange={(event) => {
+                  const file = event.target.files?.[0] || null;
+
+                  const allowedTypes = [
+                    "application/pdf",
+                    "image/jpeg",
+                    "image/png",
+                    "image/webp",
+                    "application/msword",
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  ];
+
+                  if (file && !allowedTypes.includes(file.type)) {
+                    event.target.value = "";
+                    setSelectedMaterialFile(null);
+                    setError("Formato não permitido. Usa PDF, imagem ou Word.");
+                    return;
+                  }
+
+                  if (file && file.size > 4 * 1024 * 1024) {
+                    event.target.value = "";
+                    setSelectedMaterialFile(null);
+                    setError("O ficheiro não pode ultrapassar 4 MB.");
+                    return;
+                  }
+
+                  clearFeedback();
+                  setSelectedMaterialFile(file);
+                }}
+              />
+
+              {selectedMaterialFile && (
+                <p>
+                  Ficheiro selecionado:{" "}
+                  <strong>{selectedMaterialFile.name}</strong>
+                </p>
+              )}
+
+              <button
+                type="submit"
+                disabled={
+                  materialSaving ||
+                  !selectedMaterialFile ||
+                  (materialForm.type === "certificate" &&
+                    !materialForm.studentId)
+                }
+              >
+                {materialSaving ? "A publicar..." : "Publicar material"}
+              </button>
+            </form>
+          )}
+
+          <div style={{ marginTop: "24px" }}>
+            <h3>Ficheiros disponibilizados</h3>
+
+            {materialsLoading ? (
+              <div className="academy-loading">
+                <RefreshCw size={22} />
+                <span>A carregar materiais...</span>
+              </div>
+            ) : classMaterials.length === 0 ? (
+              <div className="academy-empty">
+                <FileText size={30} />
+                <strong>Ainda não existem materiais.</strong>
+                <span>
+                  Os documentos publicados aparecerão aqui.
+                </span>
+              </div>
+            ) : (
+              <div className="academy-list">
+                {classMaterials.map((material) => (
+                  <article
+                    className="academy-list-card"
+                    key={material._id}
+                  >
+                    <div className="academy-list-icon">
+                      <FileText size={23} />
+                    </div>
+
+                    <div className="academy-list-main">
+                      <h3>{material.title}</h3>
+
+                      <p>
+                        {typeLabels[material.type] || "Documento"}
+                      </p>
+
+                      {material.description && (
+                        <p>{material.description}</p>
+                      )}
+
+                      <div className="academy-list-details">
+                        <span>{material.originalName}</span>
+                        <span>
+                          {(material.size / 1024).toFixed(0)} KB
+                        </span>
+                      </div>
+
+                      {canTeach && material.student && (
+                        <small>
+                          Certificado de: {material.student.name}
+                        </small>
+                      )}
+                    </div>
+
+                    <div className="academy-list-actions">
+                      <button
+                        type="button"
+                        onClick={() => handleDownloadMaterial(material)}
+                      >
+                        <Download size={15} />
+                        Abrir ficheiro
+                      </button>
+
+                      {canTeach && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteMaterial(material._id)}
+                        >
+                          <Trash2 size={15} />
+                          Remover
+                        </button>
+                      )}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   const tabs = [
     { id: "courses", label: "Cursos", icon: BookOpen },
@@ -1660,6 +1914,13 @@ function Academy({ user, initialTab = "courses" }) {
                           type="button"
                           onClick={() => handleViewRoster(classItem)}
                         >
+                          <button
+  type="button"
+  onClick={() => handleOpenMaterials(classItem)}
+>
+  <FileText size={15} />
+  Materiais
+</button>
                           <Eye size={15} />
                           Ver alunos
                         </button>
@@ -1878,10 +2139,10 @@ function Academy({ user, initialTab = "courses" }) {
           são controladas pelo servidor.
         </span>
       </div>
-
-            {renderForm()}
-      {renderEnrollmentModal()}
-      {renderRoster()}
+{renderForm()}
+{renderEnrollmentModal()}
+{renderRoster()}
+{renderMaterialsModal()}
 
       {/* SALA DE VIDEOCONFERÊNCIA LIVEKIT */}
       {selectedSession && (
