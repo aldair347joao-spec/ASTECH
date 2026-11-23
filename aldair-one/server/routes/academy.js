@@ -1533,11 +1533,13 @@ async function getAuthorizedMaterialClass(req, res) {
     return classItem;
   }
 
-  const enrollment = await Enrollment.findOne({
-    class: classItem._id,
-    student: req.user._id,
-    status: "active"
-  }).select("_id");
+  
+const enrollment = await Enrollment.findOne({
+  class: classItem._id,
+  student: req.user._id,
+  status: { $in: ["active", "completed"] }
+}).select("_id");
+
 
   if (!enrollment) {
     res.status(403).json({
@@ -1755,11 +1757,13 @@ router.get("/materials/:materialId/file", async (req, res) => {
           });
         }
       } else {
-        const enrollment = await Enrollment.findOne({
-          class: classItem._id,
-          student: req.user._id,
-          status: "active"
-        }).select("_id");
+        
+const enrollment = await Enrollment.findOne({
+  class: classItem._id,
+  student: req.user._id,
+  status: { $in: ["active", "completed"] }
+}).select("_id");
+
 
         if (!enrollment) {
           return res.status(403).json({
