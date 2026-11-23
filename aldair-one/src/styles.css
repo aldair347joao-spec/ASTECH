@@ -1515,3 +1515,21 @@ img {
     transition-duration: .01ms !important;
   }
 }
+
+.service-request-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--cyan);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.service-request-link:hover {
+  gap: 14px;
+}
