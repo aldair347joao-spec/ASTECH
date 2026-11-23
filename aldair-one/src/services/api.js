@@ -244,16 +244,16 @@ export const academyAPI = {
       }
     ),
 
-  
-enrollInClass: (classId, enrollmentData = {}) =>
-  apiRequest(
-    `/api/academy/classes/${encodeURIComponent(classId)}/enroll`,
-    {
-      method: "POST",
-      body: JSON.stringify(enrollmentData)
-    }
-  ),
+  // INSCRIÇÃO DO ALUNO
 
+  enrollInClass: (classId, enrollmentData = {}) =>
+    apiRequest(
+      `/api/academy/classes/${encodeURIComponent(classId)}/enroll`,
+      {
+        method: "POST",
+        body: JSON.stringify(enrollmentData)
+      }
+    ),
 
   // INSCRIÇÕES
 
@@ -261,6 +261,15 @@ enrollInClass: (classId, enrollmentData = {}) =>
     apiRequest(
       `/api/academy/enrollments${buildQuery(filters)}`
     ),
+
+  // OBTER COMPROVATIVO DE PAGAMENTO
+
+  getEnrollmentProof: (enrollmentId) =>
+    apiRequest(
+      `/api/academy/enrollments/${encodeURIComponent(enrollmentId)}/proof`
+    ),
+
+  // ATIVAR INSCRIÇÃO APÓS VERIFICAÇÃO
 
   activateEnrollment: (enrollmentId) =>
     apiRequest(
