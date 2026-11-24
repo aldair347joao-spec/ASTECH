@@ -598,7 +598,7 @@ const [selectedService, setSelectedService] = useState("");
 
           <div className="contact-grid">
             <a
-              href="mailto:contacto@aldairone.com"
+              href="mailto:contactoaldairone@gmail.com"
               className="contact-item"
             >
               <Mail size={22} />
