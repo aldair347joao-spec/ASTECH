@@ -4,19 +4,21 @@ package com.aldairone.mobile
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
-import android.graphics.Color
-import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
-import android.view.Gravity
+import android.view.View
 import android.widget.Button
-import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import io.livekit.android.LiveKit
+import io.livekit.android.renderer.SurfaceViewRenderer
 import io.livekit.android.room.Room
+import io.livekit.android.room.RoomEvent
+import io.livekit.android.room.participant.Track
+import io.livekit.android.room.track.LocalVideoTrack
+import io.livekit.android.room.track.VideoTrack
 import kotlinx.coroutines.launch
 import okhttp3.*
 import org.json.JSONObject
@@ -24,13 +26,30 @@ import java.io.IOException
 
 class LiveClassActivity : AppCompatActivity() {
 
-    private val apiBase = "https://astech-l7vb.onrender.com/api"
+    private val apiBase =
+        "https://astech-l7vb.onrender.com/api"
+
     private val client = OkHttpClient()
 
     private lateinit var room: Room
+
     private lateinit var statusText: TextView
+    private lateinit var remoteRenderer: SurfaceViewRenderer
+    private lateinit var localRenderer: SurfaceViewRenderer
+
+    private lateinit var remotePlaceholder: TextView
+    private lateinit var localPlaceholder: TextView
+
+    private lateinit var microphoneButton: Button
+    private lateinit var cameraButton: Button
+    private lateinit var leaveButton: Button
 
     private var connected = false
+    private var microphoneEnabled = true
+    private var cameraEnabled = true
+
+    private var localVideoTrack: LocalVideoTrack? = null
+    private var remoteVideoTrack: VideoTrack? = null
 
     private val permissionsLauncher =
         registerForActivityResult(
@@ -47,14 +66,17 @@ class LiveClassActivity : AppCompatActivity() {
                 requestRoomToken()
             } else {
                 statusText.text =
-                    "Precisamos das permissões de câmara e microfone."
+                    "Autoriza a câmara e o microfone para entrar na aula."
             }
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        createInterface()
+        setContentView(R.layout.activity_live_class)
+
+        initializeViews()
+        initializeRoom()
 
         val sessionId = intent.getStringExtra("sessionId")
 
@@ -63,145 +85,110 @@ class LiveClassActivity : AppCompatActivity() {
             return
         }
 
-        checkPermissionsAndConnect(sessionId)
+        setupButtons()
+        checkPermissionsAndConnect()
     }
 
-    private fun createInterface() {
+    private fun initializeViews() {
 
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            setPadding(24, 30, 24, 30)
-            setBackgroundColor(Color.rgb(10, 16, 32))
-        }
+        statusText = findViewById(R.id.liveClassStatus)
 
-        val title = TextView(this).apply {
-            text = "ALDAIR ONE"
-            textSize = 27f
-            setTextColor(Color.WHITE)
-            setTypeface(null, android.graphics.Typeface.BOLD)
-            gravity = Gravity.CENTER
-        }
+        remoteRenderer =
+            findViewById(R.id.remoteVideoRenderer)
 
-        root.addView(title)
+        localRenderer =
+            findViewById(R.id.localVideoRenderer)
 
-        val subtitle = TextView(this).apply {
-            text = "Sala de Aula Online"
-            textSize = 19f
-            setTextColor(Color.rgb(48, 126, 255))
-            gravity = Gravity.CENTER
-            setPadding(0, 12, 0, 25)
-        }
+        remotePlaceholder =
+            findViewById(R.id.remoteVideoPlaceholder)
 
-        root.addView(subtitle)
+        localPlaceholder =
+            findViewById(R.id.localVideoPlaceholder)
 
-        statusText = TextView(this).apply {
-            text = "A preparar a sala..."
-            textSize = 15f
-            setTextColor(Color.WHITE)
-            gravity = Gravity.CENTER
-            setPadding(12, 20, 12, 20)
-        }
+        microphoneButton =
+            findViewById(R.id.btnMicrophone)
 
-        root.addView(statusText)
+        cameraButton =
+            findViewById(R.id.btnCamera)
 
-        addControlButton(
-            root,
-            "Desligar microfone"
-        ) {
-            lifecycleScope.launch {
-                if (connected) {
-                    room.localParticipant.setMicrophoneEnabled(false)
-                    statusText.text = "Microfone desligado."
-                }
-            }
-        }
-
-        addControlButton(
-            root,
-            "Ligar microfone"
-        ) {
-            lifecycleScope.launch {
-                if (connected) {
-                    room.localParticipant.setMicrophoneEnabled(true)
-                    statusText.text = "Microfone ligado."
-                }
-            }
-        }
-
-        addControlButton(
-            root,
-            "Desligar câmara"
-        ) {
-            lifecycleScope.launch {
-                if (connected) {
-                    room.localParticipant.setCameraEnabled(false)
-                    statusText.text = "Câmara desligada."
-                }
-            }
-        }
-
-        addControlButton(
-            root,
-            "Ligar câmara"
-        ) {
-            lifecycleScope.launch {
-                if (connected) {
-                    room.localParticipant.setCameraEnabled(true)
-                    statusText.text = "Câmara ligada."
-                }
-            }
-        }
-
-        addControlButton(
-            root,
-            "Sair da aula"
-        ) {
-            if (::room.isInitialized) {
-                lifecycleScope.launch {
-                    room.disconnect()
-                    finish()
-                }
-            } else {
-                finish()
-            }
-        }
-
-        setContentView(root)
+        leaveButton =
+            findViewById(R.id.btnLeaveClass)
     }
 
-    private fun addControlButton(
-        parent: LinearLayout,
-        label: String,
-        action: () -> Unit
-    ) {
+    private fun initializeRoom() {
 
-        val button = Button(this).apply {
-            text = label
-            isAllCaps = false
-            setTextColor(Color.WHITE)
+        room = LiveKit.create(applicationContext)
 
-            background = GradientDrawable().apply {
-                setColor(Color.rgb(36, 75, 130))
-                cornerRadius = 18f
-            }
+        room.initVideoRenderer(remoteRenderer)
+        room.initVideoRenderer(localRenderer)
+    }
 
-            setOnClickListener {
-                action()
+    private fun setupButtons() {
+
+        microphoneButton.setOnClickListener {
+
+            if (!connected) return@setOnClickListener
+
+            lifecycleScope.launch {
+                try {
+                    microphoneEnabled = !microphoneEnabled
+
+                    room.localParticipant
+                        .setMicrophoneEnabled(microphoneEnabled)
+
+                    microphoneButton.text =
+                        if (microphoneEnabled) {
+                            "Desligar microfone"
+                        } else {
+                            "Ligar microfone"
+                        }
+
+                } catch (error: Exception) {
+                    statusText.text =
+                        "Não foi possível alterar o microfone."
+                }
             }
         }
 
-        val params = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            58
-        )
+        cameraButton.setOnClickListener {
 
-        params.setMargins(0, 7, 0, 7)
+            if (!connected) return@setOnClickListener
 
-        parent.addView(button, params)
+            lifecycleScope.launch {
+                try {
+                    cameraEnabled = !cameraEnabled
+
+                    room.localParticipant
+                        .setCameraEnabled(cameraEnabled)
+
+                    cameraButton.text =
+                        if (cameraEnabled) {
+                            "Desligar câmara"
+                        } else {
+                            "Ligar câmara"
+                        }
+
+                    if (!cameraEnabled) {
+                        localRenderer.visibility = View.INVISIBLE
+                        localPlaceholder.visibility = View.VISIBLE
+                    }
+
+                } catch (error: Exception) {
+                    statusText.text =
+                        "Não foi possível alterar a câmara."
+                }
+            }
+        }
+
+        leaveButton.setOnClickListener {
+            disconnectAndFinish()
+        }
+
+        microphoneButton.text = "Desligar microfone"
+        cameraButton.text = "Desligar câmara"
     }
 
-    private fun checkPermissionsAndConnect(sessionId: String) {
+    private fun checkPermissionsAndConnect() {
 
         val audioGranted =
             ContextCompat.checkSelfPermission(
@@ -231,8 +218,8 @@ class LiveClassActivity : AppCompatActivity() {
 
         statusText.text = "A validar o teu acesso à aula..."
 
-        val sessionId = intent.getStringExtra("sessionId")
-            ?: return
+        val sessionId =
+            intent.getStringExtra("sessionId") ?: return
 
         val token = getSharedPreferences(
             "aldair_one",
@@ -240,7 +227,8 @@ class LiveClassActivity : AppCompatActivity() {
         ).getString("token", null)
 
         if (token.isNullOrBlank()) {
-            statusText.text = "Sessão expirada. Volta a entrar."
+            statusText.text =
+                "Sessão expirada. Volta a iniciar sessão."
             return
         }
 
@@ -276,6 +264,7 @@ class LiveClassActivity : AppCompatActivity() {
                     response.body()?.string().orEmpty()
 
                 try {
+
                     val json = JSONObject(responseText)
 
                     if (!response.isSuccessful ||
@@ -307,7 +296,8 @@ class LiveClassActivity : AppCompatActivity() {
                         )
                     }
 
-                } catch (e: Exception) {
+                } catch (error: Exception) {
+
                     runOnUiThread {
                         statusText.text =
                             "Não foi possível validar o acesso."
@@ -324,24 +314,66 @@ class LiveClassActivity : AppCompatActivity() {
 
         statusText.text = "A ligar à sala..."
 
-        room = LiveKit.create(applicationContext)
-
         lifecycleScope.launch {
 
             try {
 
+                // Receber os eventos de vídeo remoto.
+                launch {
+                    room.events.collect { event ->
+
+                        when (event) {
+
+                            is RoomEvent.TrackSubscribed -> {
+
+                                val track = event.track
+
+                                if (track is VideoTrack) {
+                                    attachRemoteVideo(track)
+                                }
+                            }
+
+                            else -> Unit
+                        }
+                    }
+                }
+
+                // Ligar à sala.
                 room.connect(
                     serverUrl,
                     participantToken
                 )
 
-                room.localParticipant.setMicrophoneEnabled(true)
-                room.localParticipant.setCameraEnabled(true)
+                // Ativar microfone e câmara.
+                room.localParticipant
+                    .setMicrophoneEnabled(true)
+
+                room.localParticipant
+                    .setCameraEnabled(true)
+
+                microphoneEnabled = true
+                cameraEnabled = true
+
+                // Associar a câmara local ao renderizador.
+                val publication =
+                    room.localParticipant.getTrackPublication(
+                        Track.Source.CAMERA
+                    )
+
+                localVideoTrack =
+                    publication?.track as? LocalVideoTrack
+
+                localVideoTrack?.addRenderer(localRenderer)
+
+                if (localVideoTrack != null) {
+                    localRenderer.visibility = View.VISIBLE
+                    localPlaceholder.visibility = View.GONE
+                }
 
                 connected = true
 
                 statusText.text =
-                    "Estás ligado à sala! Microfone e câmara preparados."
+                    "Ligado à sala de aula."
 
             } catch (error: Exception) {
 
@@ -349,18 +381,78 @@ class LiveClassActivity : AppCompatActivity() {
 
                 statusText.text =
                     "Erro ao entrar na sala: ${error.message}"
-
             }
+        }
+    }
+
+    private fun attachRemoteVideo(track: VideoTrack) {
+
+        runOnUiThread {
+
+            try {
+
+                remoteVideoTrack?.removeRenderer(remoteRenderer)
+
+                remoteVideoTrack = track
+
+                track.addRenderer(remoteRenderer)
+
+                remoteRenderer.visibility = View.VISIBLE
+                remotePlaceholder.visibility = View.GONE
+
+                statusText.text =
+                    "Vídeo de um participante recebido."
+
+            } catch (error: Exception) {
+
+                statusText.text =
+                    "Não foi possível apresentar o vídeo remoto."
+            }
+        }
+    }
+
+    private fun disconnectAndFinish() {
+
+        if (!::room.isInitialized) {
+            finish()
+            return
+        }
+
+        connected = false
+
+        lifecycleScope.launch {
+
+            try {
+                remoteVideoTrack?.removeRenderer(remoteRenderer)
+                localVideoTrack?.removeRenderer(localRenderer)
+
+                room.disconnect()
+                room.release()
+
+            } catch (error: Exception) {
+                // A atividade será encerrada mesmo se a
+                // desconexão encontrar algum problema.
+            }
+
+            finish()
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
 
-        if (::room.isInitialized) {
+        connected = false
+
+        if (::room.isInitialized && !isFinishing) {
             lifecycleScope.launch {
-                room.disconnect()
-                room.release()
+                try {
+                    remoteVideoTrack?.removeRenderer(remoteRenderer)
+                    localVideoTrack?.removeRenderer(localRenderer)
+                    room.disconnect()
+                    room.release()
+                } catch (error: Exception) {
+                    // Limpeza final.
+                }
             }
         }
     }
