@@ -24,8 +24,6 @@ import {
   X,
   Wifi,
   ScreenShare,
-  Maximize2,
-  Minimize2,
 } from "lucide-react";
 
 import ParticipantRoster from "./ParticipantRoster";
@@ -184,67 +182,11 @@ function LiveClassroom({ session, canManage }) {
 
   const [chatOpen, setChatOpen] = useState(false);
 
-  // A sala começa expandida por padrão.
-  const [isExpanded, setIsExpanded] = useState(true);
-  const classroomRef = useRef(null);
-
+  // Estado da partilha de ecrã
   const [screenShareError, setScreenShareError] = useState("");
   const [screenShareLoading, setScreenShareLoading] = useState(false);
 
-  // Sincronizar o estado com o ecrã inteiro do navegador.
-  useEffect(() => {
-    function handleFullscreenChange() {
-      if (!document.fullscreenElement) {
-        setIsExpanded(false);
-      }
-    }
-
-    document.addEventListener(
-      "fullscreenchange",
-      handleFullscreenChange
-    );
-
-    return () => {
-      document.removeEventListener(
-        "fullscreenchange",
-        handleFullscreenChange
-      );
-    };
-  }, []);
-
-  // Alternar entre apresentação expandida e modo padrão.
-  async function toggleClassroomView() {
-    if (isExpanded) {
-      if (document.fullscreenElement) {
-        try {
-          await document.exitFullscreen();
-        } catch (error) {
-          console.warn(
-            "Não foi possível sair do ecrã inteiro:",
-            error
-          );
-        }
-      }
-
-      setIsExpanded(false);
-      return;
-    }
-
-    setIsExpanded(true);
-
-    if (classroomRef.current?.requestFullscreen) {
-      try {
-        await classroomRef.current.requestFullscreen();
-      } catch (error) {
-        console.warn(
-          "Ecrã inteiro nativo indisponível:",
-          error
-        );
-      }
-    }
-  }
-
-  // Partilha de ecrã.
+  // Iniciar ou parar a partilha de ecrã
   async function handleScreenShare() {
     if (!localParticipant || screenShareLoading) return;
 
@@ -252,11 +194,13 @@ function LiveClassroom({ session, canManage }) {
     setScreenShareLoading(true);
 
     try {
+      // Se já estiver a partilhar, parar a transmissão.
       if (isScreenShareEnabled) {
         await localParticipant.setScreenShareEnabled(false);
         return;
       }
 
+      // Verificar se o navegador suporta captura de ecrã.
       if (
         !navigator.mediaDevices ||
         !navigator.mediaDevices.getDisplayMedia
@@ -266,6 +210,7 @@ function LiveClassroom({ session, canManage }) {
         );
       }
 
+      // Iniciar a partilha através do LiveKit.
       await localParticipant.setScreenShareEnabled(true);
 
     } catch (error) {
@@ -315,10 +260,7 @@ function LiveClassroom({ session, canManage }) {
     "Participante";
 
   return (
-    <div
-      ref={classroomRef}
-      className={`ao-classroom ${isExpanded ? "is-expanded" : ""}`}
-    >
+    <div className="ao-classroom">
       <div className="ao-classroom-topbar">
         <div className="ao-classroom-heading">
           <div className="ao-classroom-icon">AO</div>
@@ -338,32 +280,6 @@ function LiveClassroom({ session, canManage }) {
         </div>
 
         <div className="ao-classroom-top-actions">
-          <button
-            type="button"
-            className="ao-view-toggle"
-            onClick={toggleClassroomView}
-            aria-label={
-              isExpanded
-                ? "Voltar ao modo padrão"
-                : "Ativar ecrã inteiro"
-            }
-            title={
-              isExpanded
-                ? "Modo padrão"
-                : "Ecrã inteiro"
-            }
-          >
-            {isExpanded ? (
-              <Minimize2 size={16} />
-            ) : (
-              <Maximize2 size={16} />
-            )}
-
-            <span>
-              {isExpanded ? "Modo padrão" : "Ecrã inteiro"}
-            </span>
-          </button>
-
           <span className="ao-participant-total">
             <Users size={15} />
             {participantCount}
@@ -515,6 +431,7 @@ function LiveClassroom({ session, canManage }) {
                 </span>
               </TrackToggle>
 
+              {/* Partilha de ecrã */}
               <button
                 type="button"
                 className={`ao-control-button ${
@@ -562,6 +479,7 @@ function LiveClassroom({ session, canManage }) {
             </div>
           </div>
 
+          {/* Mensagem de erro da partilha */}
           {screenShareError && (
             <div
               className="ao-screen-share-error"
