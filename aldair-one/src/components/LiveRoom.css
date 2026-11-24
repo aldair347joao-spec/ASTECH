@@ -800,3 +800,132 @@
 .ao-classroom-topbar {
   display: none;
 }
+
+/* ==========================================
+   ALDAIR ONE — MODO HORIZONTAL MOBILE
+========================================== */
+
+@media (max-width: 650px) and (orientation: landscape) {
+  .live-room-overlay {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* Cabeçalho flutuante: não reserva altura */
+  .live-room-header {
+    position: absolute;
+    top: env(safe-area-inset-top, 0px);
+    right: 0;
+    left: 0;
+    z-index: 300;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: flex-end;
+    width: 100%;
+    min-height: 0;
+    padding: 6px 9px;
+    box-sizing: border-box;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    pointer-events: none;
+  }
+
+  .live-room-brand,
+  .live-room-session-info,
+  .live-room-room-badge {
+    display: none !important;
+  }
+
+  .live-room-header-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    width: auto;
+    pointer-events: auto;
+  }
+
+  .live-room-header-actions button {
+    min-height: 30px;
+    padding: 0 10px;
+    border-radius: 8px;
+    font-size: 9px;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.35);
+  }
+
+  /* A sala ocupa toda a altura */
+  .live-room-content {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    flex: 1 1 100%;
+    overflow: hidden;
+  }
+
+  .live-room-content .lk-video-conference,
+  .live-room-content .lk-video-conference-inner {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+  }
+
+  /* Controlos mais baixos */
+  .live-room-content .lk-control-bar {
+    min-height: 44px !important;
+    padding: 3px 5px !important;
+    gap: 4px;
+  }
+
+  .live-room-content .lk-control-bar button {
+    min-width: 34px;
+    min-height: 34px;
+    padding: 4px;
+  }
+
+  /* Indicador de gravação discreto */
+  .live-room-recording-status {
+    position: absolute;
+    top: 7px;
+    left: 8px;
+    z-index: 250;
+    width: auto;
+    max-width: 42%;
+    min-height: 25px;
+    padding: 4px 8px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 20px;
+    font-size: 9px;
+    background: rgba(10, 20, 36, 0.85);
+    backdrop-filter: blur(10px);
+  }
+
+  .live-room-error {
+    position: absolute;
+    top: 43px;
+    right: 8px;
+    left: 8px;
+    z-index: 350;
+    padding: 7px 10px;
+    border-radius: 8px;
+    font-size: 10px;
+  }
+
+  .participant-roster {
+    top: 43px;
+    right: 8px;
+  }
+
+  .participant-roster-toggle {
+    min-height: 31px;
+    padding: 5px 9px;
+  }
+
+  .participant-roster-panel {
+    max-height: 55vh;
+  }
+}
