@@ -122,18 +122,20 @@
 .ao-classroom-body {
   display: flex;
   flex: 1;
+  min-width: 0;
   min-height: 0;
   overflow: hidden;
 }
 
 .ao-classroom-main {
   display: flex;
-  flex: 1;
+  flex: 1 1 auto;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
   padding: 17px 20px 10px;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .ao-stage-heading {
@@ -167,9 +169,12 @@
 .ao-video-stage {
   position: relative;
   display: flex;
-  flex: 1;
-  min-height: 250px;
-  max-height: min(55vh, 570px);
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  min-height: 320px;
+  height: auto;
+  max-height: none;
   overflow: hidden;
   background:
     radial-gradient(circle at 50% 40%, #172b4b, #0a1424 70%);
@@ -192,8 +197,12 @@
 }
 
 .ao-video-tile.is-featured {
+  position: relative;
+  flex: 1 1 auto;
   width: 100%;
-  min-height: 250px;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -201,9 +210,13 @@
 
 .ao-video-element,
 .ao-video-tile video {
+  display: block;
   width: 100%;
   height: 100%;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
+  object-position: center;
 }
 
 .ao-video-placeholder,
@@ -667,14 +680,18 @@
 
   .ao-classroom-body {
     position: relative;
+    min-width: 0;
   }
 
   .ao-classroom-main {
-    padding: 11px 9px 8px;
+    padding: 8px 3px 8px;
+    width: 100%;
+    min-width: 0;
   }
 
   .ao-stage-heading {
     margin-bottom: 9px;
+    padding: 0 5px;
   }
 
   .ao-stage-heading h3 {
@@ -683,13 +700,18 @@
 
   .ao-video-stage {
     flex: 0 0 auto;
-    min-height: 220px;
-    max-height: 38vh;
-    border-radius: 12px;
+    width: 100%;
+    min-width: 0;
+    min-height: 250px;
+    height: 48vh;
+    max-height: 520px;
+    border-radius: 10px;
   }
 
   .ao-video-tile.is-featured {
-    min-height: 220px;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
   }
 
   .ao-avatar-large {
@@ -700,6 +722,7 @@
 
   .ao-participants-section {
     margin-top: 12px;
+    padding: 0 5px;
   }
 
   .ao-participants-strip {
@@ -777,13 +800,13 @@
   }
 
   .ao-classroom-main {
-    padding-right: 7px;
-    padding-left: 7px;
+    padding-right: 3px;
+    padding-left: 3px;
   }
 
-  .ao-video-stage,
-  .ao-video-tile.is-featured {
-    min-height: 190px;
+  .ao-video-stage {
+    min-height: 220px;
+    height: 43vh;
   }
 
   .ao-control-button {
@@ -796,6 +819,7 @@
     display: none;
   }
 }
+
 .ao-screen-share-error {
   margin: 8px auto;
   padding: 10px 14px;
