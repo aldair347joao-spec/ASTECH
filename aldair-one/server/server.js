@@ -10,7 +10,7 @@ import adminRoutes from "./routes/admin.js";
 import academyRoutes from "./routes/academy.js";
 import livekitRoutes from "./routes/livekit.js";
 import livekitWebhookRoutes from "./routes/livekitWebhook.js";
-
+import livechatRoutes from "./routes/livechat.js";
 const app = express();
 
 app.set("trust proxy", 1);
@@ -85,7 +85,8 @@ app.use("/api/academy", academyRoutes);
 app.use("/api/services", servicesRoutes);
 // Videoconferência LiveKit
 app.use("/api/livekit", livekitRoutes);
-
+// Chat persistente e documentos das aulas online
+app.use("/api/livechat", livechatRoutes);
 // Rota não encontrada
 app.use((req, res) => {
   res.status(404).json({
