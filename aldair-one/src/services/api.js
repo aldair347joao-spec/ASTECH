@@ -355,11 +355,30 @@ export const academyAPI = {
       `/api/academy/live-sessions${buildQuery(filters)}`
     ),
 
+  
   createLiveSession: (sessionData) =>
     apiRequest("/api/academy/live-sessions", {
       method: "POST",
       body: JSON.stringify(sessionData)
-    })
+    }),
+
+  cancelLiveSession: (sessionId, reason = "") =>
+    apiRequest(
+      `/api/academy/live-sessions/${encodeURIComponent(sessionId)}/cancel`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ reason })
+      }
+    ),
+
+  deleteLiveSession: (sessionId) =>
+    apiRequest(
+      `/api/academy/live-sessions/${encodeURIComponent(sessionId)}`,
+      {
+        method: "DELETE"
+      }
+    )
+
 };
 
 // ==========================================
