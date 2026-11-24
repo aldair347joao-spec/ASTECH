@@ -260,8 +260,7 @@ class LiveClassActivity : AppCompatActivity() {
             ) {
 
                 val responseText =
-                    response.body()?.string().orEmpty()
-
+    response.body.string().orEmpty()
                 try {
 
                     val json = JSONObject(responseText)
