@@ -417,6 +417,58 @@ router.patch(
   }
 );
 
+// Eliminar curso — apenas administradores
+router.delete(
+  "/courses/:id",
+  authorize(...ADMIN_ROLES),
+  async (req, res) => {
+    try {
+      if (!validId(req.params.id)) {
+        return res.status(400).json({
+          success: false,
+          message: "Identificador de curso inválido."
+        });
+      }
+
+      const course = await Course.findById(req.params.id);
+
+      if (!course) {
+        return res.status(404).json({
+          success: false,
+          message: "Curso não encontrado."
+        });
+      }
+
+      const [classesCount, enrollmentsCount] = await Promise.all([
+        ClassModel.countDocuments({ course: course._id }),
+        Enrollment.countDocuments({ course: course._id })
+      ]);
+
+      if (classesCount > 0 || enrollmentsCount > 0) {
+        return res.status(409).json({
+          success: false,
+          message:
+            "Este curso possui turmas ou inscrições associadas. Arquiva-o para preservar o histórico."
+        });
+      }
+
+      await course.deleteOne();
+
+      return res.json({
+        success: true,
+        message: "Curso eliminado com sucesso."
+      });
+    } catch (error) {
+      console.error("Erro ao eliminar curso:", error.message);
+
+      return res.status(500).json({
+        success: false,
+        message: "Não foi possível eliminar o curso."
+      });
+    }
+  }
+);
+
 // ==========================================
 // TURMAS
 // ==========================================
@@ -805,6 +857,71 @@ router.patch(
       return res.status(500).json({
         success: false,
         message: "Não foi possível alterar o estado da turma."
+      });
+    }
+  }
+);
+
+// Eliminar turma — administrador ou formador responsável
+router.delete(
+  "/classes/:id",
+  authorize(...TEACHING_ROLES),
+  async (req, res) => {
+    try {
+      if (!validId(req.params.id)) {
+        return res.status(400).json({
+          success: false,
+          message: "Identificador de turma inválido."
+        });
+      }
+
+      const classItem = await ClassModel.findById(req.params.id);
+
+      if (!classItem) {
+        return res.status(404).json({
+          success: false,
+          message: "Turma não encontrada."
+        });
+      }
+
+      if (!canManageClass(req.user, classItem)) {
+        return res.status(403).json({
+          success: false,
+          message: "Não tens autorização para eliminar esta turma."
+        });
+      }
+
+      const [enrollmentsCount, sessionsCount, materialsCount] =
+        await Promise.all([
+          Enrollment.countDocuments({ class: classItem._id }),
+          LiveSession.countDocuments({ class: classItem._id }),
+          ClassMaterial.countDocuments({ class: classItem._id })
+        ]);
+
+      if (
+        enrollmentsCount > 0 ||
+        sessionsCount > 0 ||
+        materialsCount > 0
+      ) {
+        return res.status(409).json({
+          success: false,
+          message:
+            "Esta turma possui inscrições, aulas online ou materiais associados. Cancela ou arquiva a turma para preservar o histórico."
+        });
+      }
+
+      await classItem.deleteOne();
+
+      return res.json({
+        success: true,
+        message: "Turma eliminada com sucesso."
+      });
+    } catch (error) {
+      console.error("Erro ao eliminar turma:", error.message);
+
+      return res.status(500).json({
+        success: false,
+        message: "Não foi possível eliminar a turma."
       });
     }
   }
