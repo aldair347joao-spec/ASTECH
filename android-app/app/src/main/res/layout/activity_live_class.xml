@@ -1,0 +1,97 @@
+
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/liveClassRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#0A1020"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/liveClassTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="ALDAIR ONE"
+        android:textColor="#FFFFFF"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:padding="8dp" />
+
+    <TextView
+        android:id="@+id/liveClassStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="A preparar a sala..."
+        android:textColor="#9DB8E8"
+        android:textSize="14sp"
+        android:gravity="center"
+        android:padding="8dp" />
+
+    <FrameLayout
+        android:id="@+id/remoteVideoContainer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="#17243B"
+        android:layout_marginTop="12dp">
+
+        <TextView
+            android:id="@+id/remoteVideoPlaceholder"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:text="A aguardar participantes..."
+            android:textColor="#FFFFFF"
+            android:gravity="center"
+            android:textSize="16sp" />
+
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/localVideoContainer"
+        android:layout_width="120dp"
+        android:layout_height="160dp"
+        android:layout_gravity="end"
+        android:layout_marginTop="12dp"
+        android:background="#263B5C">
+
+        <TextView
+            android:id="@+id/localVideoPlaceholder"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:text="A tua câmara"
+            android:textColor="#FFFFFF"
+            android:gravity="center"
+            android:textSize="12sp" />
+
+    </FrameLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:paddingTop="12dp">
+
+        <Button
+            android:id="@+id/btnMicrophone"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Microfone" />
+
+        <Button
+            android:id="@+id/btnCamera"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Câmara" />
+
+        <Button
+            android:id="@+id/btnLeaveClass"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Sair" />
+
+    </LinearLayout>
+
+</LinearLayout>
