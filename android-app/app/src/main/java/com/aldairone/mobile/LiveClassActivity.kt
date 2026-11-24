@@ -1,6 +1,4 @@
-
 package com.aldairone.mobile
-
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
@@ -15,8 +13,9 @@ import androidx.lifecycle.lifecycleScope
 import io.livekit.android.LiveKit
 import io.livekit.android.renderer.SurfaceViewRenderer
 import io.livekit.android.room.Room
-import io.livekit.android.room.RoomEvent
-import io.livekit.android.room.participant.Track
+import io.livekit.android.events.RoomEvent
+import io.livekit.android.events.collect
+import io.livekit.android.room.track.Track
 import io.livekit.android.room.track.LocalVideoTrack
 import io.livekit.android.room.track.VideoTrack
 import kotlinx.coroutines.launch
