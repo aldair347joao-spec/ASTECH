@@ -831,3 +831,154 @@
   font-size: 11px;
   text-align: center;
 }
+
+/* ==========================================
+   SALA DE AULA — PAISAGEM NO TELEMÓVEL
+========================================== */
+
+@media (max-width: 650px) and (orientation: landscape) {
+  .ao-classroom {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .ao-classroom-topbar {
+    display: none !important;
+  }
+
+  .ao-classroom-body {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+  }
+
+  .ao-classroom-main {
+    display: flex;
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    padding: 4px;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .ao-stage-heading {
+    flex-shrink: 0;
+    margin: 0 0 4px;
+  }
+
+  .ao-stage-heading h3 {
+    font-size: 11px;
+  }
+
+  .ao-panel-eyebrow {
+    font-size: 7px;
+  }
+
+  .ao-video-stage {
+    flex: 1 0 auto;
+    width: 100%;
+    min-height: 160px;
+    height: 48vh;
+    max-height: 340px;
+    border-radius: 9px;
+  }
+
+  .ao-video-tile.is-featured {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .ao-participants-section {
+    flex-shrink: 0;
+    margin-top: 5px;
+  }
+
+  .ao-participants-title {
+    margin-bottom: 4px;
+  }
+
+  .ao-participants-title > div {
+    font-size: 9px;
+  }
+
+  .ao-participants-strip {
+    min-height: 54px;
+    max-height: 60px;
+    gap: 5px;
+    padding: 0 1px 3px;
+  }
+
+  .ao-participants-strip .ao-video-tile {
+    flex: 0 0 76px;
+    height: 49px;
+    min-height: 49px;
+  }
+
+  .ao-video-name {
+    right: 3px;
+    bottom: 3px;
+    left: 3px;
+    max-width: calc(100% - 6px);
+    padding: 3px 5px;
+    font-size: 7px;
+  }
+
+  .ao-avatar-large {
+    width: 32px;
+    height: 32px;
+    font-size: 13px;
+  }
+
+  .ao-classroom-controls {
+    flex-shrink: 0;
+    gap: 5px;
+    padding: 4px;
+    margin-top: 4px;
+    border-radius: 8px;
+  }
+
+  .ao-control-group {
+    gap: 4px;
+  }
+
+  .ao-control-secondary {
+    padding-left: 5px;
+  }
+
+  .ao-control-button {
+    flex-direction: row;
+    gap: 4px;
+    min-width: 0;
+    min-height: 34px;
+    padding: 4px 7px;
+    font-size: 8px;
+  }
+
+  .ao-control-button svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .ao-classroom-footer {
+    display: none;
+  }
+
+  .ao-roster-layer {
+    top: 42px;
+    right: 8px;
+  }
+
+  .ao-chat-panel {
+    position: absolute;
+    z-index: 400;
+    inset: 0;
+    width: 100%;
+  }
+}
