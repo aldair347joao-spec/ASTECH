@@ -210,6 +210,14 @@ export const academyAPI = {
       }
     ),
 
+  deleteCourse: (courseId) =>
+    apiRequest(
+      `/api/academy/courses/${encodeURIComponent(courseId)}`,
+      {
+        method: "DELETE"
+      }
+    ),
+
   // TURMAS
 
   getClasses: (filters = {}) =>
@@ -241,6 +249,14 @@ export const academyAPI = {
       {
         method: "PATCH",
         body: JSON.stringify({ status })
+      }
+    ),
+
+  deleteClass: (classId) =>
+    apiRequest(
+      `/api/academy/classes/${encodeURIComponent(classId)}`,
+      {
+        method: "DELETE"
       }
     ),
 
