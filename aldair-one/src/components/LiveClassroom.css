@@ -1152,3 +1152,493 @@
     font-size: 9px;
   }
 }
+
+/* ==========================================
+   ALDAIR ONE — EXPERIÊNCIA IMERSIVA
+   Eliminar cabeçalhos duplicados e expandir vídeo
+========================================== */
+
+/* Estrutura base */
+.ao-classroom {
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ao-classroom-body {
+  flex: 1 1 0;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ao-classroom-main {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ao-video-stage {
+  flex: 1 1 0;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  max-height: none;
+  overflow: hidden;
+}
+
+.ao-video-tile.is-featured {
+  flex: 1 1 0;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.ao-video-element,
+.ao-video-tile video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+/* TELEMÓVEL VERTICAL */
+@media (max-width: 650px) and (orientation: portrait) {
+  /* O cabeçalho exterior já apresenta a identificação da aula. */
+  .ao-classroom-topbar,
+  .ao-stage-heading {
+    display: none !important;
+  }
+
+  .ao-classroom {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .ao-classroom-body {
+    display: flex;
+    flex: 1 1 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .ao-classroom-main {
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    gap: 5px;
+    padding: 5px 5px 4px;
+    overflow: hidden;
+  }
+
+  /* Vídeo ocupa todo o espaço que sobra. */
+  .ao-video-stage {
+    position: relative;
+    display: flex;
+    flex: 1 1 0;
+    width: 100%;
+    min-width: 0;
+    min-height: 160px;
+    height: auto;
+    max-height: none;
+    border-radius: 11px;
+  }
+
+  .ao-video-tile.is-featured {
+    display: flex;
+    flex: 1 1 0;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .ao-video-element,
+  .ao-video-tile video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+  }
+
+  /* Participantes passam a ocupar uma faixa compacta. */
+  .ao-participants-section {
+    flex: 0 0 auto;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 0 2px;
+  }
+
+  .ao-participants-title {
+    display: none !important;
+  }
+
+  .ao-participants-strip {
+    display: flex;
+    align-items: center;
+    min-height: 0;
+    height: 42px;
+    max-height: 42px;
+    gap: 6px;
+    padding: 2px 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .ao-participants-strip .ao-video-tile {
+    flex: 0 0 58px;
+    width: 58px;
+    height: 36px;
+    min-height: 36px;
+    border-radius: 6px;
+  }
+
+  .ao-local-presence {
+    padding: 5px 7px;
+    font-size: 8px;
+    white-space: nowrap;
+  }
+
+  .ao-strip-empty {
+    font-size: 8px;
+  }
+
+  /* Controlos sempre acessíveis na parte inferior. */
+  .ao-classroom-controls {
+    display: flex;
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-width: 0;
+    min-height: 54px;
+    gap: 5px;
+    padding: 5px 3px;
+    margin: 0;
+    border-radius: 9px;
+  }
+
+  .ao-control-group {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .ao-control-secondary {
+    padding-left: 5px;
+  }
+
+  .ao-control-button {
+    display: inline-flex !important;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-width: 48px;
+    min-height: 44px;
+    padding: 4px;
+    font-size: 8px;
+    white-space: nowrap;
+  }
+
+  .ao-control-button svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .ao-classroom-footer {
+    display: none !important;
+  }
+
+  .ao-chat-panel {
+    position: absolute;
+    z-index: 500;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .ao-roster-layer {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    z-index: 550;
+  }
+
+  .ao-roster-layer .participant-roster-panel {
+    max-height: 55dvh;
+  }
+
+  .ao-screen-share-error {
+    position: absolute;
+    z-index: 600;
+    right: 7px;
+    bottom: 65px;
+    left: 7px;
+    margin: 0;
+    padding: 7px;
+    font-size: 9px;
+  }
+}
+
+/* TELEMÓVEIS PEQUENOS */
+@media (max-width: 380px) and (orientation: portrait) {
+  .ao-classroom-main {
+    gap: 4px;
+    padding: 4px 3px;
+  }
+
+  .ao-video-stage {
+    min-height: 140px;
+  }
+
+  .ao-participants-strip {
+    height: 36px;
+    max-height: 36px;
+  }
+
+  .ao-participants-strip .ao-video-tile {
+    flex-basis: 50px;
+    width: 50px;
+    height: 31px;
+    min-height: 31px;
+  }
+
+  .ao-classroom-controls {
+    min-height: 49px;
+    gap: 3px;
+    padding: 3px 2px;
+  }
+
+  .ao-control-group {
+    gap: 2px;
+  }
+
+  .ao-control-secondary {
+    padding-left: 3px;
+  }
+
+  .ao-control-button {
+    min-width: 42px;
+    min-height: 41px;
+    padding: 3px;
+    font-size: 7px;
+  }
+
+  .ao-control-button svg {
+    width: 15px;
+    height: 15px;
+  }
+}
+
+/* TELEMÓVEL HORIZONTAL */
+@media (orientation: landscape) and (max-height: 500px) {
+  .ao-classroom {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .ao-classroom-topbar,
+  .ao-stage-heading,
+  .ao-classroom-footer,
+  .ao-participants-title {
+    display: none !important;
+  }
+
+  .ao-classroom-body {
+    display: flex;
+    flex: 1 1 0;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .ao-classroom-main {
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    gap: 3px;
+    padding: 3px;
+    overflow: hidden;
+  }
+
+  .ao-video-stage {
+    display: flex;
+    flex: 1 1 0;
+    width: 100%;
+    min-width: 0;
+    min-height: 90px;
+    height: auto;
+    max-height: none;
+    border-radius: 8px;
+  }
+
+  .ao-video-tile.is-featured {
+    flex: 1 1 0;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .ao-participants-section {
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 0;
+  }
+
+  .ao-participants-strip {
+    height: 34px;
+    min-height: 34px;
+    max-height: 34px;
+    gap: 4px;
+    padding: 1px 0;
+  }
+
+  .ao-participants-strip .ao-video-tile {
+    flex: 0 0 48px;
+    width: 48px;
+    height: 30px;
+    min-height: 30px;
+    border-radius: 5px;
+  }
+
+  .ao-local-presence,
+  .ao-strip-empty {
+    display: none !important;
+  }
+
+  .ao-video-name {
+    right: 3px;
+    bottom: 3px;
+    left: 3px;
+    padding: 2px 4px;
+    font-size: 7px;
+  }
+
+  .ao-classroom-controls {
+    display: flex;
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    gap: 5px;
+    padding: 3px;
+    margin: 0;
+    border-radius: 7px;
+  }
+
+  .ao-control-group {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 4px;
+  }
+
+  .ao-control-secondary {
+    padding-left: 4px;
+  }
+
+  .ao-control-button {
+    display: inline-flex !important;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 32px;
+    min-height: 30px;
+    padding: 3px 6px;
+    font-size: 8px;
+    white-space: nowrap;
+  }
+
+  .ao-control-button svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .ao-chat-panel {
+    position: absolute;
+    z-index: 500;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .ao-roster-layer {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    z-index: 550;
+  }
+
+  .ao-screen-share-error {
+    position: absolute;
+    z-index: 600;
+    right: 6px;
+    bottom: 42px;
+    left: 6px;
+    margin: 0;
+    padding: 5px;
+    font-size: 8px;
+  }
+}
+
+/* ECRÃ HORIZONTAL MUITO BAIXO */
+@media (orientation: landscape) and (max-height: 360px) {
+  .ao-video-stage {
+    min-height: 70px;
+  }
+
+  .ao-participants-strip {
+    height: 27px;
+    min-height: 27px;
+    max-height: 27px;
+  }
+
+  .ao-participants-strip .ao-video-tile {
+    flex-basis: 40px;
+    width: 40px;
+    height: 24px;
+    min-height: 24px;
+  }
+
+  .ao-classroom-controls {
+    min-height: 32px;
+    padding: 2px;
+  }
+
+  .ao-control-button {
+    min-height: 26px;
+    padding: 2px 4px;
+  }
+}
