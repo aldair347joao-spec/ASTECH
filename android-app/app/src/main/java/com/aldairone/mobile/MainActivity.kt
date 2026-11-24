@@ -1,4 +1,5 @@
 package com.aldairone.mobile
+
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import android.app.Activity
@@ -253,8 +254,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         val requestBody = body.toString().toRequestBody(
-    "application/json; charset=utf-8".toMediaType()
-)
+            "application/json; charset=utf-8".toMediaType()
+        )
 
         val request = Request.Builder()
             .url("$apiBase/auth/login")
@@ -278,7 +279,7 @@ class MainActivity : AppCompatActivity() {
                 response: Response
             ) {
                 val responseText =
-    response.body.string().orEmpty()
+                    response.body?.string().orEmpty()
 
                 try {
                     val json = JSONObject(responseText)
@@ -386,7 +387,7 @@ class MainActivity : AppCompatActivity() {
                 response: Response
             ) {
                 val responseText =
-    response.body.string().orEmpty()
+                    response.body?.string().orEmpty()
 
                 try {
                     val json = JSONObject(responseText)
@@ -561,17 +562,15 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    
-private fun requestRoomAccess(sessionId: String) {
+    private fun requestRoomAccess(sessionId: String) {
 
-    val intent = android.content.Intent(
-        this,
-        LiveClassActivity::class.java
-    )
+        val intent = android.content.Intent(
+            this,
+            LiveClassActivity::class.java
+        )
 
-    intent.putExtra("sessionId", sessionId)
+        intent.putExtra("sessionId", sessionId)
 
-    startActivity(intent)
-}
-
+        startActivity(intent)
+    }
 }
