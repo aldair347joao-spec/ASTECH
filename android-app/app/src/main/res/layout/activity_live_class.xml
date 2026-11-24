@@ -6,10 +6,9 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="#0A1020"
-    android:padding="16dp">
+    android:padding="12dp">
 
     <TextView
-        android:id="@+id/liveClassTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="ALDAIR ONE"
@@ -34,14 +33,19 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:background="#17243B"
-        android:layout_marginTop="12dp">
+        android:layout_marginTop="10dp"
+        android:background="#17243B">
+
+        <livekit.org.webrtc.SurfaceViewRenderer
+            android:id="@+id/remoteVideoRenderer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
 
         <TextView
             android:id="@+id/remoteVideoPlaceholder"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:text="A aguardar participantes..."
+            android:text="A aguardar o formador..."
             android:textColor="#FFFFFF"
             android:gravity="center"
             android:textSize="16sp" />
@@ -53,8 +57,13 @@
         android:layout_width="120dp"
         android:layout_height="160dp"
         android:layout_gravity="end"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="10dp"
         android:background="#263B5C">
+
+        <livekit.org.webrtc.SurfaceViewRenderer
+            android:id="@+id/localVideoRenderer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
 
         <TextView
             android:id="@+id/localVideoPlaceholder"
