@@ -1,4 +1,5 @@
 package com.aldairone.mobile
+
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
@@ -260,7 +261,8 @@ class LiveClassActivity : AppCompatActivity() {
             ) {
 
                 val responseText =
-    response.body.string().orEmpty()
+                    response.body?.string().orEmpty()
+
                 try {
 
                     val json = JSONObject(responseText)
