@@ -2128,4 +2128,144 @@ router.post(
   }
 );
 
+// ==========================================
+// CANCELAR AULA ONLINE
+// ==========================================
+
+router.patch(
+  "/live-sessions/:id/cancel",
+  authorize(...TEACHING_ROLES),
+  async (req, res) => {
+    try {
+      if (!validId(req.params.id)) {
+        return res.status(400).json({
+          success: false,
+          message: "Identificador de aula inválido."
+        });
+      }
+
+      const session = await LiveSession.findById(req.params.id);
+
+      if (!session) {
+        return res.status(404).json({
+          success: false,
+          message: "Aula online não encontrada."
+        });
+      }
+
+      const classItem = await ClassModel.findById(session.class);
+
+      if (!classItem || !canManageClass(req.user, classItem)) {
+        return res.status(403).json({
+          success: false,
+          message: "Não tens autorização para gerir esta aula."
+        });
+      }
+
+      if (session.status !== "scheduled") {
+        return res.status(409).json({
+          success: false,
+          message: "Só podes cancelar aulas ainda agendadas."
+        });
+      }
+
+      session.status = "cancelled";
+      session.cancelledAt = new Date();
+      session.cancellationReason =
+        typeof req.body.reason === "string"
+          ? req.body.reason.trim().slice(0, 500)
+          : "Cancelada pelo responsável.";
+
+      await session.save();
+
+      return res.json({
+        success: true,
+        message: "Aula cancelada com sucesso.",
+        session
+      });
+    } catch (error) {
+      console.error("Erro ao cancelar aula:", error.message);
+
+      return res.status(500).json({
+        success: false,
+        message: "Não foi possível cancelar a aula."
+      });
+    }
+  }
+);
+
+// ==========================================
+// ELIMINAR AULA ONLINE COM SEGURANÇA
+// ==========================================
+
+router.delete(
+  "/live-sessions/:id",
+  authorize(...TEACHING_ROLES),
+  async (req, res) => {
+    try {
+      if (!validId(req.params.id)) {
+        return res.status(400).json({
+          success: false,
+          message: "Identificador de aula inválido."
+        });
+      }
+
+      const session = await LiveSession.findById(req.params.id);
+
+      if (!session) {
+        return res.status(404).json({
+          success: false,
+          message: "Aula online não encontrada."
+        });
+      }
+
+      const classItem = await ClassModel.findById(session.class);
+
+      if (!classItem || !canManageClass(req.user, classItem)) {
+        return res.status(403).json({
+          success: false,
+          message: "Não tens autorização para eliminar esta aula."
+        });
+      }
+
+      const hasRecording =
+        session.recording?.enabled === true ||
+        !["disabled", "not_started"].includes(
+          session.recording?.status
+        ) ||
+        Boolean(session.recording?.recordingUrl) ||
+        Boolean(session.recording?.recordingKey) ||
+        Boolean(session.recording?.egressId) ||
+        Boolean(session.recording?.endSessionRequested);
+
+      if (
+        !["scheduled", "cancelled"].includes(session.status) ||
+        session.actualStart ||
+        session.actualEnd ||
+        hasRecording
+      ) {
+        return res.status(409).json({
+          success: false,
+          message:
+            "Esta aula não pode ser eliminada porque já começou, foi realizada ou possui gravação associada. Cancela ou mantém o histórico."
+        });
+      }
+
+      await session.deleteOne();
+
+      return res.json({
+        success: true,
+        message: "Aula online eliminada com sucesso."
+      });
+    } catch (error) {
+      console.error("Erro ao eliminar aula:", error.message);
+
+      return res.status(500).json({
+        success: false,
+        message: "Não foi possível eliminar a aula."
+      });
+    }
+  }
+);
+
 export default router;
