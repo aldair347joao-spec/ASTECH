@@ -929,3 +929,136 @@
     max-height: 55vh;
   }
 }
+
+/* ==========================================
+   CORRECÇÃO REAL — HORIZONTAL COM POUCA ALTURA
+========================================== */
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .live-room-overlay {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* Cabeçalho deixa de consumir altura */
+  .live-room-header {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 500;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    width: auto;
+    min-height: 0;
+    padding: 5px 8px;
+    gap: 0;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    pointer-events: none;
+  }
+
+  .live-room-brand,
+  .live-room-session-info,
+  .live-room-room-badge {
+    display: none !important;
+  }
+
+  .live-room-header-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 5px;
+    pointer-events: auto;
+  }
+
+  .live-room-header-actions button {
+    min-height: 29px;
+    padding: 0 9px;
+    border-radius: 7px;
+    font-size: 9px;
+  }
+
+  /* Aviso da gravação passa a ser flutuante */
+  .live-room-recording-status {
+    position: absolute;
+    top: 5px;
+    left: 7px;
+    z-index: 450;
+    display: inline-flex;
+    justify-content: flex-start;
+    width: auto;
+    max-width: 48%;
+    min-height: 25px;
+    padding: 4px 8px;
+    overflow: hidden;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 20px;
+    background: rgba(17, 28, 44, 0.88);
+    font-size: 9px;
+    backdrop-filter: blur(10px);
+  }
+
+  /* Conteúdo ganha toda a altura */
+  .live-room-content {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    flex: 1 1 100%;
+    overflow: hidden;
+  }
+
+  .live-room-content .lk-video-conference,
+  .live-room-content .lk-video-conference-inner {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+  }
+
+  .live-room-content .lk-grid-layout {
+    padding: 4px;
+    gap: 4px;
+  }
+
+  /* Controlos compactos */
+  .live-room-content .lk-control-bar {
+    min-height: 42px !important;
+    padding: 3px 5px !important;
+    gap: 4px;
+  }
+
+  .live-room-content .lk-control-bar button {
+    min-width: 33px;
+    min-height: 33px;
+    padding: 3px;
+  }
+
+  .participant-roster {
+    top: 40px;
+    right: 7px;
+  }
+
+  .participant-roster-toggle {
+    min-height: 30px;
+    padding: 5px 8px;
+  }
+
+  .participant-roster-panel {
+    max-height: 55vh;
+  }
+
+  .live-room-error {
+    position: absolute;
+    top: 38px;
+    right: 7px;
+    left: 7px;
+    z-index: 600;
+    padding: 7px;
+  }
+}
