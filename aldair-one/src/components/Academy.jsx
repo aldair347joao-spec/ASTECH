@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useState } from "react";
 import {
   BookOpen,
@@ -754,6 +753,61 @@ function Academy({ user, initialTab = "courses" }) {
       setError(err.message);
     } finally {
       setSaving(false);
+    }
+  }
+
+  // CANCELAR AULA ONLINE
+  async function handleCancelSession(session) {
+    const confirmed = window.confirm(
+      `Pretendes cancelar a aula "${session.title}"? A aula continuará registada no histórico.`
+    );
+
+    if (!confirmed) return;
+
+    clearFeedback();
+
+    try {
+      const response = await academyAPI.cancelLiveSession(
+        session._id,
+        "Cancelada pelo administrador ou formador responsável."
+      );
+
+      setSessions((current) =>
+        current.map((item) =>
+          item._id === session._id
+            ? { ...item, status: "cancelled", cancelledAt: new Date().toISOString() }
+            : item
+        )
+      );
+
+      setMessage(response.message || "Aula cancelada com sucesso.");
+    } catch (err) {
+      setError(err.message || "Não foi possível cancelar a aula.");
+    }
+  }
+
+  // ELIMINAR AULA ONLINE
+  async function handleDeleteSession(session) {
+    const confirmed = window.confirm(
+      `Tens a certeza de que pretendes eliminar definitivamente a aula "${session.title}"? Esta operação só é permitida para sessões sem gravações ou histórico de realização.`
+    );
+
+    if (!confirmed) return;
+
+    clearFeedback();
+
+    try {
+      const response = await academyAPI.deleteLiveSession(
+        session._id
+      );
+
+      setSessions((current) =>
+        current.filter((item) => item._id !== session._id)
+      );
+
+      setMessage(response.message || "Aula eliminada com sucesso.");
+    } catch (err) {
+      setError(err.message || "Não foi possível eliminar a aula.");
     }
   }
 
@@ -2197,6 +2251,29 @@ function Academy({ user, initialTab = "courses" }) {
                             ? "Entrar na sala"
                             : "Sala indisponível"}
                       </button>
+                      
+{canTeach && session.status === "scheduled" && (
+  <button
+    type="button"
+    className="academy-delete-button"
+    onClick={() => handleCancelSession(session)}
+  >
+    Cancelar aula
+  </button>
+)}
+
+{canTeach &&
+  ["scheduled", "cancelled"].includes(session.status) && (
+    <button
+      type="button"
+      className="academy-delete-button"
+      onClick={() => handleDeleteSession(session)}
+    >
+      <Trash2 size={15} />
+      Eliminar aula
+    </button>
+  )}
+
                     </div>
                   </article>
                 ))
