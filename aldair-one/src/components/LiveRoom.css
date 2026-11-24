@@ -797,3 +797,6 @@
     min-height: 38px;
   }
 }
+.ao-classroom-topbar {
+  display: none;
+}
