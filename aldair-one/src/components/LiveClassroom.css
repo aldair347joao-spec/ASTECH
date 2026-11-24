@@ -1099,3 +1099,56 @@
     height: 13px;
   }
 }
+
+/* HORIZONTAL — ACABAMENTO E ELIMINAÇÃO DE SOBREPOSIÇÕES */
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .ao-classroom {
+    position: relative;
+  }
+
+  /* O acesso à lista fica na barra inferior */
+  .ao-roster-layer {
+    position: absolute;
+    top: auto;
+    right: auto;
+    bottom: 48px;
+    left: 8px;
+    z-index: 450;
+    pointer-events: none;
+  }
+
+  .ao-roster-layer .participant-roster {
+    position: relative;
+    top: auto;
+    right: auto;
+    pointer-events: auto;
+  }
+
+  /* Botão flutuante escondido: o botão inferior
+     continua a abrir a mesma lista */
+  .ao-roster-layer .participant-roster-toggle {
+    display: none;
+  }
+
+  .ao-roster-layer .participant-roster-panel {
+    margin: 0;
+    max-height: 55vh;
+  }
+
+  .ao-classroom-controls {
+    position: relative;
+    z-index: 460;
+    justify-content: center;
+    gap: 8px;
+    padding: 5px 8px;
+    background: rgba(16, 28, 48, .97);
+    backdrop-filter: blur(12px);
+  }
+
+  .ao-control-button {
+    min-width: 38px;
+    padding: 4px 8px;
+    font-size: 9px;
+  }
+}
