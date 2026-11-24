@@ -24,6 +24,17 @@ function LiveRoom({ session, canManage, onClose, onEnded }) {
 
   const recordingEnabled = session.recording?.enabled === true;
 
+  const isRecording = /gravação ativa|gravação já se encontra ativa/i.test(
+    recordingStatus
+  );
+
+  const isRecordingStarting = /a iniciar a gravação/i.test(
+    recordingStatus
+  );
+
+  const isRecordingFinalizing = finalizing ||
+    /a finalizar e guardar/i.test(recordingStatus);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -240,8 +251,16 @@ function LiveRoom({ session, canManage, onClose, onEnded }) {
   return (
     <div className="live-room-overlay">
       <header className="live-room-header">
-        <div>
-          <span>ALDAIR ONE ACADEMY</span>
+        <div className="live-room-brand">
+          <div className="live-room-brand-mark">AO</div>
+
+          <div className="live-room-brand-copy">
+            <span>ALDAIR ONE</span>
+            <small>ACADEMY · VIRTUAL CLASSROOM</small>
+          </div>
+        </div>
+
+        <div className="live-room-session-info">
           <h2>{session.title}</h2>
           <p>
             {session.class?.name || "Sala de videoconferência"}
@@ -249,6 +268,11 @@ function LiveRoom({ session, canManage, onClose, onEnded }) {
         </div>
 
         <div className="live-room-header-actions">
+          <span className="live-room-room-badge">
+            <span className="live-room-status-dot" />
+            SALA VIRTUAL
+          </span>
+
           {canManage && (
             <button
               type="button"
@@ -276,13 +300,25 @@ function LiveRoom({ session, canManage, onClose, onEnded }) {
       </header>
 
       {recordingStatus && (
-        <div className="live-room-error">
-          {recordingStatus}
+        <div
+          className={`live-room-recording-status ${
+            isRecording
+              ? "is-recording"
+              : isRecordingStarting
+                ? "is-starting"
+                : isRecordingFinalizing
+                  ? "is-finalizing"
+                  : "is-warning"
+          }`}
+          role="status"
+        >
+          <span className="live-room-recording-indicator" />
+          <span>{recordingStatus}</span>
         </div>
       )}
 
       {error && (
-        <div className="live-room-error">
+        <div className="live-room-error" role="alert">
           {error}
 
           {disconnected && !finalizing && (
