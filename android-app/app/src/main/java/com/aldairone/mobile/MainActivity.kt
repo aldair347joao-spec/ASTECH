@@ -1,6 +1,6 @@
-
 package com.aldairone.mobile
-
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 import android.app.Activity
 import android.os.Bundle
 import android.content.Context
@@ -252,10 +252,9 @@ class MainActivity : AppCompatActivity() {
             put("password", password)
         }
 
-        val requestBody = RequestBody.create(
-            MediaType.parse("application/json; charset=utf-8"),
-            body.toString()
-        )
+        val requestBody = body.toString().toRequestBody(
+    "application/json; charset=utf-8".toMediaType()
+)
 
         val request = Request.Builder()
             .url("$apiBase/auth/login")
@@ -279,7 +278,7 @@ class MainActivity : AppCompatActivity() {
                 response: Response
             ) {
                 val responseText =
-                    response.body()?.string().orEmpty()
+    response.body.string().orEmpty()
 
                 try {
                     val json = JSONObject(responseText)
@@ -387,7 +386,7 @@ class MainActivity : AppCompatActivity() {
                 response: Response
             ) {
                 val responseText =
-                    response.body()?.string().orEmpty()
+    response.body.string().orEmpty()
 
                 try {
                     val json = JSONObject(responseText)
