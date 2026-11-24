@@ -1,8 +1,7 @@
 
 import { useEffect, useRef, useState } from "react";
-import {
-  Track,
-} from "livekit-client";
+import { Track } from "livekit-client";
+
 import {
   TrackToggle,
   VideoTrack,
@@ -12,6 +11,7 @@ import {
   useLocalParticipant,
   useChat,
 } from "@livekit/components-react";
+
 import {
   Mic,
   MicOff,
@@ -38,9 +38,7 @@ function ParticipantTile({ participant, track, featured = false }) {
   const initial = name.charAt(0).toUpperCase();
 
   return (
-    <div
-      className={`ao-video-tile ${featured ? "is-featured" : ""}`}
-    >
+    <div className={`ao-video-tile ${featured ? "is-featured" : ""}`}>
       {track ? (
         <VideoTrack
           trackRef={track}
@@ -55,9 +53,7 @@ function ParticipantTile({ participant, track, featured = false }) {
 
       <div className="ao-video-name">
         <span>{name}</span>
-        {participant?.isLocal && (
-          <small>Tu</small>
-        )}
+        {participant?.isLocal && <small>Tu</small>}
       </div>
 
       {participant?.isSpeaking && (
@@ -84,6 +80,7 @@ function LiveChatPanel({ onClose }) {
     event.preventDefault();
 
     const value = message.trim();
+
     if (!value || isSending) return;
 
     try {
@@ -98,7 +95,9 @@ function LiveChatPanel({ onClose }) {
     <aside className="ao-chat-panel">
       <div className="ao-side-panel-header">
         <div>
-          <span className="ao-panel-eyebrow">COMUNICAÇÃO</span>
+          <span className="ao-panel-eyebrow">
+            COMUNICAÇÃO
+          </span>
           <h3>Chat da aula</h3>
         </div>
 
@@ -183,6 +182,51 @@ function LiveClassroom({ session, canManage }) {
 
   const [chatOpen, setChatOpen] = useState(false);
 
+  // Estado da partilha de ecrã
+  const [screenShareError, setScreenShareError] = useState("");
+  const [screenShareLoading, setScreenShareLoading] = useState(false);
+
+  // Iniciar ou parar a partilha de ecrã
+  async function handleScreenShare() {
+    if (!localParticipant || screenShareLoading) return;
+
+    setScreenShareError("");
+    setScreenShareLoading(true);
+
+    try {
+      // Se já estiver a partilhar, parar a transmissão.
+      if (isScreenShareEnabled) {
+        await localParticipant.setScreenShareEnabled(false);
+        return;
+      }
+
+      // Verificar se o navegador suporta captura de ecrã.
+      if (
+        !navigator.mediaDevices ||
+        !navigator.mediaDevices.getDisplayMedia
+      ) {
+        throw new Error(
+          "Este navegador não permite partilhar o ecrã. No Android, utiliza a aplicação ALDAIR ONE."
+        );
+      }
+
+      // Iniciar a partilha através do LiveKit.
+      await localParticipant.setScreenShareEnabled(true);
+
+    } catch (error) {
+      console.error("Erro na partilha de ecrã:", error);
+
+      setScreenShareError(
+        error.name === "NotAllowedError"
+          ? "A autorização para partilhar o ecrã foi cancelada."
+          : error.message || "Não foi possível iniciar a partilha."
+      );
+
+    } finally {
+      setScreenShareLoading(false);
+    }
+  }
+
   const tracks = useTracks([
     Track.Source.Camera,
     Track.Source.ScreenShare,
@@ -255,6 +299,7 @@ function LiveClassroom({ session, canManage }) {
               <span className="ao-panel-eyebrow">
                 SALA DE APRENDIZAGEM
               </span>
+
               <h3>
                 {screenTrack
                   ? "Partilha de ecrã"
@@ -282,7 +327,9 @@ function LiveClassroom({ session, canManage }) {
                 <div className="ao-avatar-large">
                   {localName.charAt(0).toUpperCase()}
                 </div>
+
                 <h3>A preparar a transmissão</h3>
+
                 <p>
                   A imagem aparecerá aqui quando uma câmara
                   ou partilha de ecrã estiver ativa.
@@ -304,6 +351,7 @@ function LiveClassroom({ session, canManage }) {
                 <Users size={17} />
                 <strong>Na sala</strong>
               </div>
+
               <span>{participantCount} presentes</span>
             </div>
 
@@ -332,6 +380,7 @@ function LiveClassroom({ session, canManage }) {
               {mainParticipant && (
                 <div className="ao-local-presence">
                   <span className="ao-local-presence-dot" />
+
                   {mainParticipant.isLocal
                     ? "A tua transmissão está em destaque"
                     : "Transmissão em destaque"}
@@ -354,8 +403,11 @@ function LiveClassroom({ session, canManage }) {
                 ) : (
                   <MicOff size={19} />
                 )}
+
                 <span>
-                  {isMicrophoneEnabled ? "Microfone" : "Silenciado"}
+                  {isMicrophoneEnabled
+                    ? "Microfone"
+                    : "Silenciado"}
                 </span>
               </TrackToggle>
 
@@ -371,25 +423,33 @@ function LiveClassroom({ session, canManage }) {
                 ) : (
                   <VideoOff size={19} />
                 )}
+
                 <span>
-                  {isCameraEnabled ? "Câmara" : "Câmara desligada"}
+                  {isCameraEnabled
+                    ? "Câmara"
+                    : "Câmara desligada"}
                 </span>
               </TrackToggle>
 
-              <TrackToggle
-                source={Track.Source.ScreenShare}
-                showIcon={false}
+              {/* Partilha de ecrã */}
+              <button
+                type="button"
                 className={`ao-control-button ${
                   isScreenShareEnabled ? "is-active" : ""
                 }`}
+                onClick={handleScreenShare}
+                disabled={screenShareLoading}
               >
                 <MonitorUp size={19} />
+
                 <span>
-                  {isScreenShareEnabled
-                    ? "Parar partilha"
-                    : "Partilhar ecrã"}
+                  {screenShareLoading
+                    ? "A iniciar..."
+                    : isScreenShareEnabled
+                      ? "Parar partilha"
+                      : "Partilhar ecrã"}
                 </span>
-              </TrackToggle>
+              </button>
             </div>
 
             <div className="ao-control-group ao-control-secondary">
@@ -419,8 +479,21 @@ function LiveClassroom({ session, canManage }) {
             </div>
           </div>
 
+          {/* Mensagem de erro da partilha */}
+          {screenShareError && (
+            <div
+              className="ao-screen-share-error"
+              role="alert"
+            >
+              {screenShareError}
+            </div>
+          )}
+
           <div className="ao-classroom-footer">
-            <span>ALDAIR ONE · ONE PLATFORM. MULTIPLE SOLUTIONS.</span>
+            <span>
+              ALDAIR ONE · ONE PLATFORM. MULTIPLE SOLUTIONS.
+            </span>
+
             <span>Formação online</span>
           </div>
         </main>
