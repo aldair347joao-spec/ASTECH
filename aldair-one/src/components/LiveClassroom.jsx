@@ -8,8 +8,7 @@ import {
   RoomAudioRenderer,
   useTracks,
   useParticipants,
-  useLocalParticipant,
-  useChat,
+  useLocalParticipant
 } from "@livekit/components-react";
 
 import {
@@ -24,12 +23,58 @@ import {
   X,
   Wifi,
   ScreenShare,
+  Paperclip,
+  FileText,
+  Download
 } from "lucide-react";
 
 import ParticipantRoster from "./ParticipantRoster";
+import { liveChatAPI } from "../services/api";
 import "./LiveClassroom.css";
 
-function ParticipantTile({ participant, track, featured = false }) {
+const MAX_CHAT_FILE_SIZE = 5 * 1024 * 1024;
+
+const ALLOWED_CHAT_EXTENSIONS = [
+  ".pdf",
+  ".doc",
+  ".docx",
+  ".xls",
+  ".xlsx",
+  ".ppt",
+  ".pptx",
+  ".txt",
+  ".csv"
+];
+
+function formatFileSize(bytes) {
+  if (!bytes) return "0 KB";
+
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(0)} KB`;
+  }
+
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+function readFileAsDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => resolve(reader.result);
+
+    reader.onerror = () => {
+      reject(new Error("Não foi possível ler o documento."));
+    };
+
+    reader.readAsDataURL(file);
+  });
+}
+
+function ParticipantTile({
+  participant,
+  track,
+  featured = false
+}) {
   const name =
     participant?.name ||
     participant?.identity ||
@@ -65,29 +110,207 @@ function ParticipantTile({ participant, track, featured = false }) {
   );
 }
 
-function LiveChatPanel({ onClose }) {
-  const { chatMessages, send, isSending } = useChat();
-  const [message, setMessage] = useState("");
-  const messagesEndRef = useRef(null);
+/* ==========================================
+   CHAT PERSISTENTE
+========================================== */
 
+function LiveChatPanel({ sessionId, onClose }) {
+  const [messages, setMessages] = useState([]);
+  const [message, setMessage] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [downloadingId, setDownloadingId] = useState(null);
+  const [error, setError] = useState("");
+  const [status, setStatus] = useState("");
+
+  const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  // Carregar histórico e procurar novas mensagens.
+  useEffect(() => {
+    let active = true;
+    let intervalId;
+
+    async function loadMessages(initial = false) {
+      try {
+        const response = await liveChatAPI.getMessages(sessionId);
+
+        if (!active) return;
+
+        if (response.success && Array.isArray(response.messages)) {
+          setMessages(response.messages);
+          setError("");
+        }
+      } catch (err) {
+        if (active && initial) {
+          setError(
+            err.message || "Não foi possível carregar o chat."
+          );
+        }
+      } finally {
+        if (active && initial) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadMessages(true);
+
+    intervalId = window.setInterval(() => {
+      loadMessages(false);
+    }, 3000);
+
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+    };
+  }, [sessionId]);
+
+  // Descer automaticamente para a mensagem mais recente.
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({
       behavior: "smooth",
+      block: "end"
     });
-  }, [chatMessages]);
+  }, [messages]);
+
+  function handleFileSelection(event) {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    setError("");
+    setStatus("");
+
+    const extension = file.name
+      .toLowerCase()
+      .match(/\.[a-z0-9]+$/)?.[0];
+
+    if (!extension || !ALLOWED_CHAT_EXTENSIONS.includes(extension)) {
+      setError(
+        "Formato não permitido. Podes enviar PDF, Word, Excel, PowerPoint, TXT ou CSV."
+      );
+
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size <= 0 || file.size > MAX_CHAT_FILE_SIZE) {
+      setError("O documento deve ter no máximo 5 MB.");
+
+      event.target.value = "";
+      return;
+    }
+
+    setSelectedFile(file);
+  }
+
+  function removeSelectedFile() {
+    setSelectedFile(null);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  }
 
   async function handleSubmit(event) {
     event.preventDefault();
 
-    const value = message.trim();
+    const text = message.trim();
 
-    if (!value || isSending) return;
+    if ((!text && !selectedFile) || sending) return;
+
+    setSending(true);
+    setError("");
+    setStatus("A enviar...");
 
     try {
-      await send(value);
+      let filePayload = null;
+
+      if (selectedFile) {
+        const data = await readFileAsDataURL(selectedFile);
+
+        filePayload = {
+          originalName: selectedFile.name,
+          mimeType:
+            selectedFile.type || "application/octet-stream",
+          data
+        };
+      }
+
+      const response = await liveChatAPI.sendMessage(
+        sessionId,
+        {
+          message: text,
+          file: filePayload
+        }
+      );
+
+      if (!response.success || !response.chatMessage) {
+        throw new Error(
+          response.message || "O servidor não confirmou o envio."
+        );
+      }
+
+      setMessages((current) => {
+        const alreadyExists = current.some(
+          (item) => item.id === response.chatMessage.id
+        );
+
+        if (alreadyExists) return current;
+
+        return [...current, response.chatMessage];
+      });
+
       setMessage("");
-    } catch (error) {
-      console.error("Erro ao enviar mensagem:", error);
+      removeSelectedFile();
+      setStatus("Mensagem enviada com sucesso.");
+
+      window.setTimeout(() => {
+        setStatus("");
+      }, 2500);
+    } catch (err) {
+      setError(
+        err.message || "Não foi possível enviar a mensagem."
+      );
+      setStatus("");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function handleDownload(item) {
+    if (!item.attachment || downloadingId) return;
+
+    setDownloadingId(item.id);
+    setError("");
+
+    try {
+      const blob = await liveChatAPI.downloadAttachment(
+        sessionId,
+        item.id
+      );
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = item.attachment.originalName;
+
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      window.setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+      }, 1500);
+    } catch (err) {
+      setError(
+        err.message || "Não foi possível descarregar o documento."
+      );
+    } finally {
+      setDownloadingId(null);
     }
   }
 
@@ -98,7 +321,13 @@ function LiveChatPanel({ onClose }) {
           <span className="ao-panel-eyebrow">
             COMUNICAÇÃO
           </span>
+
           <h3>Chat da aula</h3>
+
+          <small className="ao-chat-live-status">
+            <span />
+            Mensagens sincronizadas
+          </small>
         </div>
 
         <button
@@ -112,63 +341,171 @@ function LiveChatPanel({ onClose }) {
       </div>
 
       <div className="ao-chat-messages">
-        {chatMessages.length === 0 ? (
+        {loading ? (
+          <div className="ao-chat-empty">
+            <MessageSquare size={28} />
+            <strong>A carregar conversa...</strong>
+          </div>
+        ) : messages.length === 0 ? (
           <div className="ao-chat-empty">
             <MessageSquare size={28} />
             <strong>A conversa começa aqui</strong>
+
             <span>
-              Envia uma mensagem para os participantes desta aula.
+              Envia uma mensagem ou partilha um documento
+              com os participantes desta aula.
             </span>
           </div>
         ) : (
-          chatMessages.map((item, index) => {
-            const sender =
-              item.from?.name ||
-              item.from?.identity ||
-              "Participante";
+          messages.map((item) => (
+            <div
+              className="ao-chat-message"
+              key={item.id}
+            >
+              <div className="ao-chat-message-heading">
+                <strong>{item.senderName || "Participante"}</strong>
 
-            return (
-              <div
-                className="ao-chat-message"
-                key={`${item.timestamp || "msg"}-${index}`}
-              >
-                <strong>{sender}</strong>
-                <p>{item.message}</p>
+                <time>
+                  {item.createdAt
+                    ? new Date(item.createdAt).toLocaleTimeString(
+                        "pt-PT",
+                        {
+                          hour: "2-digit",
+                          minute: "2-digit"
+                        }
+                      )
+                    : ""}
+                </time>
               </div>
-            );
-          })
+
+              {item.message && (
+                <p>{item.message}</p>
+              )}
+
+              {item.attachment && (
+                <div className="ao-chat-attachment">
+                  <div className="ao-chat-file-icon">
+                    <FileText size={20} />
+                  </div>
+
+                  <div className="ao-chat-file-info">
+                    <strong>
+                      {item.attachment.originalName}
+                    </strong>
+
+                    <small>
+                      {formatFileSize(item.attachment.size)}
+                    </small>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="ao-chat-download"
+                    onClick={() => handleDownload(item)}
+                    disabled={downloadingId === item.id}
+                    aria-label="Descarregar documento"
+                    title="Descarregar documento"
+                  >
+                    <Download size={17} />
+                  </button>
+                </div>
+              )}
+            </div>
+          ))
         )}
 
         <div ref={messagesEndRef} />
       </div>
+
+      {selectedFile && (
+        <div className="ao-chat-selected-file">
+          <FileText size={17} />
+
+          <div>
+            <strong>{selectedFile.name}</strong>
+            <small>{formatFileSize(selectedFile.size)}</small>
+          </div>
+
+          <button
+            type="button"
+            onClick={removeSelectedFile}
+            aria-label="Remover documento"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
+      {error && (
+        <div className="ao-chat-error" role="alert">
+          {error}
+        </div>
+      )}
+
+      {status && (
+        <div className="ao-chat-status" role="status">
+          {status}
+        </div>
+      )}
 
       <form
         className="ao-chat-form"
         onSubmit={handleSubmit}
       >
         <input
+          ref={fileInputRef}
+          className="ao-chat-file-input"
+          type="file"
+          accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"
+          onChange={handleFileSelection}
+        />
+
+        <button
+          type="button"
+          className="ao-chat-attach-button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={sending}
+          aria-label="Anexar documento"
+          title="Anexar documento"
+        >
+          <Paperclip size={18} />
+        </button>
+
+        <input
           type="text"
           value={message}
           onChange={(event) => setMessage(event.target.value)}
           placeholder="Escreve uma mensagem..."
           maxLength={1000}
+          disabled={sending}
         />
 
         <button
           type="submit"
-          disabled={!message.trim() || isSending}
+          disabled={
+            (!message.trim() && !selectedFile) || sending
+          }
           aria-label="Enviar mensagem"
+          title="Enviar"
         >
-          <Send size={17} />
+          {sending ? (
+            <span className="ao-chat-send-spinner" />
+          ) : (
+            <Send size={17} />
+          )}
         </button>
       </form>
 
       <p className="ao-chat-notice">
-        As mensagens são partilhadas em tempo real nesta sala.
+        Mensagens guardadas no ALDAIR ONE. Documentos até 5 MB.
       </p>
     </aside>
   );
 }
+
+/* ==========================================
+   SALA DE AULA
+========================================== */
 
 function LiveClassroom({ session, canManage }) {
   const participants = useParticipants();
@@ -177,16 +514,14 @@ function LiveClassroom({ session, canManage }) {
     localParticipant,
     isMicrophoneEnabled,
     isCameraEnabled,
-    isScreenShareEnabled,
+    isScreenShareEnabled
   } = useLocalParticipant();
 
   const [chatOpen, setChatOpen] = useState(false);
 
-  // Estado da partilha de ecrã
   const [screenShareError, setScreenShareError] = useState("");
   const [screenShareLoading, setScreenShareLoading] = useState(false);
 
-  // Iniciar ou parar a partilha de ecrã
   async function handleScreenShare() {
     if (!localParticipant || screenShareLoading) return;
 
@@ -194,13 +529,11 @@ function LiveClassroom({ session, canManage }) {
     setScreenShareLoading(true);
 
     try {
-      // Se já estiver a partilhar, parar a transmissão.
       if (isScreenShareEnabled) {
         await localParticipant.setScreenShareEnabled(false);
         return;
       }
 
-      // Verificar se o navegador suporta captura de ecrã.
       if (
         !navigator.mediaDevices ||
         !navigator.mediaDevices.getDisplayMedia
@@ -210,9 +543,7 @@ function LiveClassroom({ session, canManage }) {
         );
       }
 
-      // Iniciar a partilha através do LiveKit.
       await localParticipant.setScreenShareEnabled(true);
-
     } catch (error) {
       console.error("Erro na partilha de ecrã:", error);
 
@@ -221,7 +552,6 @@ function LiveClassroom({ session, canManage }) {
           ? "A autorização para partilhar o ecrã foi cancelada."
           : error.message || "Não foi possível iniciar a partilha."
       );
-
     } finally {
       setScreenShareLoading(false);
     }
@@ -229,7 +559,7 @@ function LiveClassroom({ session, canManage }) {
 
   const tracks = useTracks([
     Track.Source.Camera,
-    Track.Source.ScreenShare,
+    Track.Source.ScreenShare
   ]);
 
   const screenTrack = tracks.find(
@@ -431,7 +761,6 @@ function LiveClassroom({ session, canManage }) {
                 </span>
               </TrackToggle>
 
-              {/* Partilha de ecrã */}
               <button
                 type="button"
                 className={`ao-control-button ${
@@ -479,7 +808,6 @@ function LiveClassroom({ session, canManage }) {
             </div>
           </div>
 
-          {/* Mensagem de erro da partilha */}
           {screenShareError && (
             <div
               className="ao-screen-share-error"
@@ -500,6 +828,7 @@ function LiveClassroom({ session, canManage }) {
 
         {chatOpen && (
           <LiveChatPanel
+            sessionId={session._id}
             onClose={() => setChatOpen(false)}
           />
         )}
