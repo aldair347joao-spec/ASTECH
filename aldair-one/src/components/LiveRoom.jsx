@@ -1,11 +1,9 @@
 
 import { useEffect, useRef, useState } from "react";
-import {
-  LiveKitRoom,
-  VideoConference
-} from "@livekit/components-react";
+import { LiveKitRoom } from "@livekit/components-react";
 import "@livekit/components-styles";
-import ParticipantRoster from "./ParticipantRoster";
+
+import LiveClassroom from "./LiveClassroom";
 import { livekitAPI } from "../services/api";
 import "./LiveRoom.css";
 
@@ -32,8 +30,8 @@ function LiveRoom({ session, canManage, onClose, onEnded }) {
     recordingStatus
   );
 
-  const isRecordingFinalizing = finalizing ||
-    /a finalizar e guardar/i.test(recordingStatus);
+  const isRecordingFinalizing =
+    finalizing || /a finalizar e guardar/i.test(recordingStatus);
 
   useEffect(() => {
     let cancelled = false;
@@ -85,6 +83,7 @@ function LiveRoom({ session, canManage, onClose, onEnded }) {
 
   async function handleRoomConnected() {
     setDisconnected(false);
+    setError("");
 
     // Apenas o formador ou administrador pode iniciar a gravação.
     if (!canManage || !recordingEnabled) return;
@@ -146,7 +145,7 @@ function LiveRoom({ session, canManage, onClose, onEnded }) {
     setDisconnected(true);
 
     // Se o encerramento foi solicitado e o webhook confirmou
-    // o fim da gravação, o servidor remove a sala.
+    // o fim da gravação, atualiza a Academia.
     if (finalizing && !endingHandledRef.current) {
       endingHandledRef.current = true;
 
@@ -190,7 +189,7 @@ function LiveRoom({ session, canManage, onClose, onEnded }) {
       const response = await livekitAPI.endSession(session._id);
 
       // A gravação ainda está a ser finalizada no LiveKit.
-      // A sala só deve fechar depois da confirmação do webhook.
+      // A sala só fecha depois da confirmação do webhook.
       if (response.pending === true) {
         setFinalizing(true);
         setRecordingStatus("A finalizar e guardar a gravação...");
@@ -349,10 +348,8 @@ function LiveRoom({ session, canManage, onClose, onEnded }) {
             dynacast: true
           }}
         >
-          <VideoConference />
-
-          <ParticipantRoster
-            sessionId={session._id}
+          <LiveClassroom
+            session={session}
             canManage={canManage}
           />
         </LiveKitRoom>
