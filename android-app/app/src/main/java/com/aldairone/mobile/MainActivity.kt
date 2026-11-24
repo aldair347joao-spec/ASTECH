@@ -562,11 +562,17 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun requestRoomAccess(sessionId: String) {
-        Toast.makeText(
-            this,
-            "A preparar o acesso à sala...",
-            Toast.LENGTH_SHORT
-        ).show()
-    }
+    
+private fun requestRoomAccess(sessionId: String) {
+
+    val intent = android.content.Intent(
+        this,
+        LiveClassActivity::class.java
+    )
+
+    intent.putExtra("sessionId", sessionId)
+
+    startActivity(intent)
+}
+
 }
