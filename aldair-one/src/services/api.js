@@ -464,4 +464,56 @@ export const servicesAPI = {
     )
 };
 
+// ==========================================
+// CHAT PERSISTENTE DAS AULAS ONLINE
+// ==========================================
+
+export const liveChatAPI = {
+  getMessages: (sessionId) =>
+    apiRequest(
+      `/api/livechat/sessions/${encodeURIComponent(sessionId)}/messages`
+    ),
+
+  sendMessage: (sessionId, payload) =>
+    apiRequest(
+      `/api/livechat/sessions/${encodeURIComponent(sessionId)}/messages`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload)
+      }
+    ),
+
+  downloadAttachment: async (sessionId, messageId) => {
+    const token = getToken();
+
+    const response = await fetch(
+      `${API_URL}/api/livechat/sessions/${encodeURIComponent(sessionId)}/messages/${encodeURIComponent(messageId)}/attachment`,
+      {
+        method: "GET",
+        headers: {
+          Accept: "application/octet-stream",
+          ...(token
+            ? { Authorization: `Bearer ${token}` }
+            : {})
+        }
+      }
+    );
+
+    if (!response.ok) {
+      let errorMessage = "Não foi possível descarregar o documento.";
+
+      try {
+        const data = await response.json();
+        errorMessage = data.message || errorMessage;
+      } catch {
+        // Mantém a mensagem padrão.
+      }
+
+      throw new Error(errorMessage);
+    }
+
+    return response.blob();
+  }
+};
+
 export default apiRequest;
