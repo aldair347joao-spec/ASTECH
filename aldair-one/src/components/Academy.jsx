@@ -447,6 +447,52 @@ function Academy({ user, initialTab = "courses" }) {
     }
   }
 
+  // ELIMINAR CURSO
+  async function handleDeleteCourse(course) {
+    const confirmed = window.confirm(
+      `Tens a certeza de que pretendes eliminar o curso "${course.title}"?`
+    );
+
+    if (!confirmed) return;
+
+    clearFeedback();
+
+    try {
+      const response = await academyAPI.deleteCourse(course._id);
+
+      setCourses((current) =>
+        current.filter((item) => item._id !== course._id)
+      );
+
+      setMessage(response.message || "Curso eliminado com sucesso.");
+    } catch (err) {
+      setError(err.message || "Não foi possível eliminar o curso.");
+    }
+  }
+
+  // ELIMINAR TURMA
+  async function handleDeleteClass(classItem) {
+    const confirmed = window.confirm(
+      `Tens a certeza de que pretendes eliminar a turma "${classItem.name}"?`
+    );
+
+    if (!confirmed) return;
+
+    clearFeedback();
+
+    try {
+      const response = await academyAPI.deleteClass(classItem._id);
+
+      setClasses((current) =>
+        current.filter((item) => item._id !== classItem._id)
+      );
+
+      setMessage(response.message || "Turma eliminada com sucesso.");
+    } catch (err) {
+      setError(err.message || "Não foi possível eliminar a turma.");
+    }
+  }
+
   function closeMaterials() {
     setSelectedMaterialClass(null);
     setClassMaterials([]);
@@ -1848,15 +1894,29 @@ function Academy({ user, initialTab = "courses" }) {
                           {course.durationHours || 0} horas
                         </span>
 
-                        {isAdmin && (
-                          <button
-                            onClick={() => handlePublishCourse(course)}
-                          >
-                            {course.status === "published"
-                              ? "Retirar publicação"
-                              : "Publicar"}
-                          </button>
-                        )}
+                       
+{isAdmin && (
+  <div className="academy-course-actions">
+    <button
+      type="button"
+      onClick={() => handlePublishCourse(course)}
+    >
+      {course.status === "published"
+        ? "Retirar publicação"
+        : "Publicar"}
+    </button>
+
+    <button
+      type="button"
+      className="academy-delete-button"
+      onClick={() => handleDeleteCourse(course)}
+    >
+      <Trash2 size={15} />
+      Apagar
+    </button>
+  </div>
+)}
+ 
                       </div>
                     </div>
                   </article>
@@ -1908,6 +1968,18 @@ function Academy({ user, initialTab = "courses" }) {
                       <span className={`academy-status ${classItem.status}`}>
                         {classItem.status}
                       </span>
+                      
+{canTeach && (
+  <button
+    type="button"
+    className="academy-delete-button"
+    onClick={() => handleDeleteClass(classItem)}
+  >
+    <Trash2 size={15} />
+    Apagar turma
+  </button>
+)}
+
 
                       
 {canTeach && (
