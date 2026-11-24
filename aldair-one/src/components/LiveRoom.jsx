@@ -16,9 +16,11 @@ function LiveRoom({ session, canManage, onClose, onEnded }) {
   const [disconnected, setDisconnected] = useState(false);
   const [connectionAttempt, setConnectionAttempt] = useState(0);
   const [recordingStatus, setRecordingStatus] = useState("");
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const recordingStartedRef = useRef(false);
   const endingHandledRef = useRef(false);
+  const roomContainerRef = useRef(null);
 
   const recordingEnabled = session.recording?.enabled === true;
 
@@ -32,6 +34,59 @@ function LiveRoom({ session, canManage, onClose, onEnded }) {
 
   const isRecordingFinalizing =
     finalizing || /a finalizar e guardar/i.test(recordingStatus);
+
+  useEffect(() => {
+    function handleFullscreenChange() {
+      setIsFullscreen(
+        document.fullscreenElement === roomContainerRef.current
+      );
+    }
+
+    document.addEventListener(
+      "fullscreenchange",
+      handleFullscreenChange
+    );
+
+    return () => {
+      document.removeEventListener(
+        "fullscreenchange",
+        handleFullscreenChange
+      );
+    };
+  }, []);
+
+  async function toggleFullscreen() {
+    const room = roomContainerRef.current;
+
+    if (!room) return;
+
+    try {
+      if (document.fullscreenElement === room) {
+        await document.exitFullscreen();
+        return;
+      }
+
+      if (!document.fullscreenEnabled || !room.requestFullscreen) {
+        setError(
+          "O teu navegador não permite ativar o modo de ecrã inteiro."
+        );
+        return;
+      }
+
+      await room.requestFullscreen({
+        navigationUI: "hide"
+      });
+    } catch (fullscreenError) {
+      console.error(
+        "Erro ao ativar ecrã inteiro:",
+        fullscreenError
+      );
+
+      setError(
+        "Não foi possível ativar o ecrã inteiro neste navegador."
+      );
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -248,7 +303,12 @@ function LiveRoom({ session, canManage, onClose, onEnded }) {
   if (!connection) return null;
 
   return (
-    <div className="live-room-overlay">
+    <div
+      ref={roomContainerRef}
+      className={`live-room-overlay ${
+        isFullscreen ? "is-fullscreen" : ""
+      }`}
+    >
       <header className="live-room-header">
         <div className="live-room-brand">
           <div className="live-room-brand-mark">AO</div>
@@ -271,6 +331,29 @@ function LiveRoom({ session, canManage, onClose, onEnded }) {
             <span className="live-room-status-dot" />
             SALA VIRTUAL
           </span>
+
+          <button
+            type="button"
+            className="live-room-fullscreen-button"
+            onClick={toggleFullscreen}
+            aria-label={
+              isFullscreen
+                ? "Sair do ecrã inteiro"
+                : "Ativar ecrã inteiro"
+            }
+            title={
+              isFullscreen
+                ? "Sair do ecrã inteiro"
+                : "Ecrã inteiro"
+            }
+          >
+            <span aria-hidden="true">
+              {isFullscreen ? "⛶" : "⛶"}
+            </span>
+            <span>
+              {isFullscreen ? "Reduzir" : "Ecrã inteiro"}
+            </span>
+          </button>
 
           {canManage && (
             <button
