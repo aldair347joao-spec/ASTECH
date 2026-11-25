@@ -1,0 +1,704 @@
+
+.academy-landing {
+  min-height: 100vh;
+  overflow: hidden;
+  color: #edf4ff;
+  background: #080e19;
+}
+
+.academy-landing-header {
+  min-height: 82px;
+  padding: 0 7%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid rgba(143, 177, 220, .12);
+  background: rgba(8, 14, 25, .94);
+}
+
+.academy-back,
+.academy-header-login {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 0;
+  color: #b7c8df;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.academy-back:hover,
+.academy-landing-footer button:hover {
+  color: #65d9ef;
+}
+
+.academy-landing-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  color: #fff;
+  text-decoration: none;
+}
+
+.academy-brand-mark {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: #07101d;
+  background: linear-gradient(135deg, #65d9ef, #6e9cff);
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.academy-landing-brand strong,
+.academy-landing-brand small {
+  display: block;
+}
+
+.academy-landing-brand strong {
+  font-size: 13px;
+  letter-spacing: .7px;
+}
+
+.academy-landing-brand small {
+  margin-top: 4px;
+  color: #65d9ef;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+.academy-header-login {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid rgba(101, 217, 239, .28);
+  border-radius: 7px;
+  color: #d9f7ff;
+  background: rgba(101, 217, 239, .06);
+}
+
+.academy-landing-hero {
+  min-height: 570px;
+  padding: 85px 10%;
+  display: grid;
+  grid-template-columns: 1.1fr .9fr;
+  align-items: center;
+  gap: 65px;
+  position: relative;
+  background:
+    radial-gradient(ellipse at 80% 40%, rgba(48, 103, 180, .17), transparent 42%),
+    linear-gradient(120deg, #0b1526, #080e19 70%);
+}
+
+.academy-hero-content {
+  position: relative;
+  z-index: 2;
+}
+
+.academy-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: #65d9ef;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.8px;
+}
+
+.academy-landing-hero h1 {
+  margin: 24px 0 20px;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: clamp(43px, 5.3vw, 70px);
+  line-height: 1.08;
+  letter-spacing: -2.8px;
+}
+
+.academy-landing-hero h1 span {
+  color: transparent;
+  background: linear-gradient(100deg, #65d9ef, #7e9fff);
+  background-clip: text;
+  -webkit-background-clip: text;
+}
+
+.academy-hero-content > p {
+  max-width: 570px;
+  color: #aabbd1;
+  font-size: 14px;
+  line-height: 1.95;
+}
+
+.academy-hero-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-top: 32px;
+}
+
+.academy-primary-button {
+  min-height: 49px;
+  padding: 0 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border: 0;
+  border-radius: 7px;
+  color: #07101d;
+  background: linear-gradient(110deg, #65d9ef, #83a5ff);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.academy-primary-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 35px rgba(83, 174, 235, .2);
+}
+
+.academy-secondary-button {
+  color: #c3d3e8;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.academy-secondary-button:hover {
+  color: #65d9ef;
+}
+
+.academy-hero-note {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 28px;
+  color: #8296b0;
+  font-size: 10px;
+}
+
+.academy-hero-note svg {
+  color: #65d9ef;
+}
+
+.academy-hero-visual {
+  min-height: 360px;
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+
+.academy-visual-glow {
+  width: 280px;
+  height: 280px;
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(75, 145, 255, .2);
+  filter: blur(75px);
+}
+
+.academy-visual-card {
+  width: min(100%, 360px);
+  min-height: 260px;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  z-index: 1;
+  border: 1px solid rgba(108, 172, 255, .27);
+  border-radius: 19px;
+  background: linear-gradient(145deg, rgba(24, 48, 81, .96), rgba(12, 23, 41, .98));
+  box-shadow: 0 35px 85px rgba(0, 0, 0, .35);
+  transform: rotate(-3deg);
+}
+
+.academy-visual-top,
+.academy-visual-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.academy-visual-icon {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  color: #65d9ef;
+  background: rgba(101, 217, 239, .1);
+}
+
+.academy-live-indicator {
+  color: #7fa2c9;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+}
+
+.academy-visual-lines {
+  display: grid;
+  gap: 11px;
+  margin: 35px 0;
+}
+
+.academy-visual-lines span {
+  height: 7px;
+  border-radius: 20px;
+  background: rgba(173, 202, 237, .13);
+}
+
+.academy-visual-lines span:first-child {
+  width: 85%;
+  background: linear-gradient(90deg, #65d9ef, rgba(101, 217, 239, .12));
+}
+
+.academy-visual-lines span:nth-child(2) {
+  width: 65%;
+}
+
+.academy-visual-lines span:last-child {
+  width: 45%;
+}
+
+.academy-visual-bottom {
+  color: #65d9ef;
+}
+
+.academy-visual-bottom small,
+.academy-visual-bottom strong {
+  display: block;
+}
+
+.academy-visual-bottom small {
+  color: #8198b5;
+  font-size: 8px;
+  letter-spacing: 2px;
+}
+
+.academy-visual-bottom strong {
+  margin-top: 5px;
+  color: #fff;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 22px;
+}
+
+.academy-floating-label {
+  padding: 14px 17px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: absolute;
+  right: -10px;
+  bottom: 15px;
+  z-index: 2;
+  border: 1px solid rgba(101, 217, 239, .2);
+  border-radius: 10px;
+  color: #65d9ef;
+  background: #111f34;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, .3);
+}
+
+.academy-floating-label strong,
+.academy-floating-label small {
+  display: block;
+}
+
+.academy-floating-label strong {
+  color: #e7f2ff;
+  font-size: 10px;
+}
+
+.academy-floating-label small {
+  margin-top: 5px;
+  color: #8ea4bf;
+  font-size: 9px;
+}
+
+.academy-benefits {
+  padding: 35px 10%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 25px;
+  border-top: 1px solid rgba(143, 177, 220, .1);
+  border-bottom: 1px solid rgba(143, 177, 220, .1);
+  background: #0c1524;
+}
+
+.academy-benefits article {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.academy-benefits article > span {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  color: #65d9ef;
+  background: rgba(101, 217, 239, .09);
+}
+
+.academy-benefits strong {
+  color: #e5efff;
+  font-size: 12px;
+}
+
+.academy-benefits p {
+  margin-top: 6px;
+  color: #8fa2bb;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.academy-how-section {
+  padding: 95px 10%;
+}
+
+.academy-section-heading {
+  max-width: 650px;
+  margin: 0 auto 48px;
+  text-align: center;
+}
+
+.academy-section-heading > span,
+.academy-enrollment-label {
+  color: #65d9ef;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.8px;
+}
+
+.academy-section-heading h2,
+.academy-enrollment-content h2,
+.academy-access-section h2 {
+  margin-top: 13px;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: clamp(27px, 3vw, 38px);
+  letter-spacing: -.8px;
+}
+
+.academy-section-heading p {
+  margin-top: 13px;
+  color: #91a5bf;
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+.academy-steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+}
+
+.academy-steps article {
+  min-height: 205px;
+  padding: 25px;
+  border: 1px solid rgba(143, 177, 220, .13);
+  border-radius: 12px;
+  background: linear-gradient(145deg, #111e31, #0c1523);
+}
+
+.academy-step-number {
+  color: #65d9ef;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.academy-steps h3 {
+  margin-top: 24px;
+  font-size: 14px;
+}
+
+.academy-steps p {
+  margin-top: 11px;
+  color: #91a5bf;
+  font-size: 11px;
+  line-height: 1.8;
+}
+
+.academy-enrollment-section {
+  padding: 0 10% 90px;
+}
+
+.academy-enrollment-content {
+  padding: 38px;
+  display: grid;
+  grid-template-columns: 60px 1fr;
+  gap: 22px;
+  border: 1px solid rgba(101, 217, 239, .17);
+  border-radius: 15px;
+  background: linear-gradient(110deg, #142947, #101b2d);
+}
+
+.academy-enrollment-icon {
+  width: 55px;
+  height: 55px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  color: #65d9ef;
+  background: rgba(101, 217, 239, .1);
+}
+
+.academy-enrollment-content h2 {
+  font-size: 25px;
+}
+
+.academy-enrollment-content p {
+  max-width: 800px;
+  margin-top: 13px;
+  color: #a5b7ce;
+  font-size: 11px;
+  line-height: 1.9;
+}
+
+.academy-access-section {
+  padding: 75px 8%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background:
+    radial-gradient(ellipse at center, rgba(48, 103, 180, .2), transparent 65%),
+    #0b1422;
+}
+
+.academy-access-icon {
+  width: 60px;
+  height: 60px;
+  margin-bottom: 23px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  color: #65d9ef;
+  background: rgba(101, 217, 239, .1);
+}
+
+.academy-access-section h2 {
+  max-width: 680px;
+}
+
+.academy-access-section > p {
+  max-width: 570px;
+  margin: 15px 0 27px;
+  color: #9aacc3;
+  font-size: 12px;
+  line-height: 1.9;
+}
+
+.academy-landing-footer {
+  min-height: 100px;
+  padding: 25px 7%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-top: 1px solid rgba(143, 177, 220, .12);
+  background: #070c15;
+}
+
+.academy-landing-footer p {
+  color: #8293aa;
+  font-size: 10px;
+  text-align: center;
+}
+
+.academy-landing-footer button {
+  border: 0;
+  color: #65d9ef;
+  background: transparent;
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+@media (max-width: 900px) {
+  .academy-landing-hero {
+    padding: 75px 7%;
+    gap: 30px;
+  }
+
+  .academy-benefits {
+    padding-left: 7%;
+    padding-right: 7%;
+  }
+
+  .academy-how-section {
+    padding-left: 7%;
+    padding-right: 7%;
+  }
+
+  .academy-steps {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .academy-enrollment-section {
+    padding-left: 7%;
+    padding-right: 7%;
+  }
+}
+
+@media (max-width: 650px) {
+  .academy-landing-header {
+    min-height: 70px;
+    padding: 0 5%;
+    gap: 10px;
+  }
+
+  .academy-back {
+    font-size: 0;
+    gap: 0;
+  }
+
+  .academy-back svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .academy-brand-mark {
+    width: 36px;
+    height: 36px;
+    font-size: 21px;
+  }
+
+  .academy-landing-brand strong {
+    font-size: 11px;
+  }
+
+  .academy-landing-brand small {
+    font-size: 7px;
+  }
+
+  .academy-header-login {
+    min-height: 37px;
+    padding: 0 11px;
+    font-size: 10px;
+  }
+
+  .academy-landing-hero {
+    min-height: auto;
+    padding: 65px 7% 55px;
+    grid-template-columns: 1fr;
+    gap: 25px;
+  }
+
+  .academy-landing-hero h1 {
+    margin-top: 20px;
+    font-size: clamp(40px, 10vw, 56px);
+    letter-spacing: -2px;
+  }
+
+  .academy-hero-content > p {
+    font-size: 12px;
+  }
+
+  .academy-hero-actions {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 17px;
+  }
+
+  .academy-primary-button {
+    width: 100%;
+    min-height: 50px;
+    padding: 0 12px;
+    font-size: 11px;
+  }
+
+  .academy-secondary-button {
+    text-align: center;
+  }
+
+  .academy-hero-visual {
+    min-height: 300px;
+    margin-top: 5px;
+  }
+
+  .academy-visual-card {
+    width: min(85%, 340px);
+    min-height: 230px;
+    padding: 24px;
+  }
+
+  .academy-floating-label {
+    right: 0;
+    bottom: 0;
+    padding: 12px;
+  }
+
+  .academy-benefits {
+    grid-template-columns: 1fr;
+    gap: 22px;
+    padding: 30px 7%;
+  }
+
+  .academy-how-section {
+    padding: 70px 7%;
+  }
+
+  .academy-section-heading {
+    margin-bottom: 32px;
+  }
+
+  .academy-steps {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .academy-steps article {
+    min-height: auto;
+    padding: 23px;
+  }
+
+  .academy-steps h3 {
+    margin-top: 15px;
+  }
+
+  .academy-enrollment-section {
+    padding: 0 7% 65px;
+  }
+
+  .academy-enrollment-content {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    padding: 25px;
+  }
+
+  .academy-enrollment-content h2 {
+    font-size: 23px;
+  }
+
+  .academy-access-section {
+    padding: 65px 7%;
+  }
+
+  .academy-access-section h2 {
+    font-size: 28px;
+  }
+
+  .academy-landing-footer {
+    flex-direction: column;
+    padding: 28px 6%;
+    text-align: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .academy-primary-button {
+    transition: none;
+  }
+}
