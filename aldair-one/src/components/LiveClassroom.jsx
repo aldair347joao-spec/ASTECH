@@ -139,7 +139,21 @@ function LiveChatPanel({ sessionId, onClose }) {
         if (!active) return;
 
         if (response.success && Array.isArray(response.messages)) {
-          setMessages(response.messages);
+          setMessages((current) => {
+  const currentLast = current[current.length - 1];
+  const incomingLast = response.messages[
+    response.messages.length - 1
+  ];
+
+  if (
+    current.length === response.messages.length &&
+    currentLast?.id === incomingLast?.id
+  ) {
+    return current;
+  }
+
+  return response.messages;
+});
           setError("");
         }
       } catch (err) {
