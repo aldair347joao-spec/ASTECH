@@ -27,6 +27,7 @@ import {
 import ServiceRequestModal from "./components/ServiceRequestModal";
 import AuthModal from "./components/AuthModal";
 import Dashboard from "./components/Dashboard";
+import AcademyLanding from "./components/AcademyLanding";
 import { authAPI, getToken } from "./services/api";
 
 const services = [
@@ -112,7 +113,8 @@ function App() {
   const [checkingSession, setCheckingSession] = useState(true);
   const [serviceModalOpen, setServiceModalOpen] = useState(false);
   const [selectedService, setSelectedService] = useState("");
-
+  const [academyPageOpen, setAcademyPageOpen] = useState(false);
+const [dashboardInitialSection, setDashboardInitialSection] = useState("overview");
   useEffect(() => {
     let active = true;
 
@@ -159,10 +161,12 @@ function App() {
   ];
 
   function handleAuthenticated(authenticatedUser) {
-    setUser(authenticatedUser);
-    setAuthOpen(false);
-    setDashboardOpen(true);
-  }
+  setUser(authenticatedUser);
+  setAuthOpen(false);
+  setAcademyPageOpen(false);
+  setDashboardInitialSection("academy");
+  setDashboardOpen(true);
+}
 
   function handleLogout() {
     authAPI.logout();
@@ -190,15 +194,36 @@ function App() {
       </div>
     );
   }
-
-  if (user && dashboardOpen) {
-    return (
-      <Dashboard
-        user={user}
-        onLogout={handleLogout}
+ if (academyPageOpen && !user) {
+  return (
+    <>
+      <AcademyLanding
+        onBack={() => setAcademyPageOpen(false)}
+        onAccess={() => {
+          setDashboardInitialSection("academy");
+          setAuthOpen(true);
+        }}
       />
-    );
-  }
+
+      {authOpen && (
+        <AuthModal
+          onClose={() => setAuthOpen(false)}
+          onAuthenticated={handleAuthenticated}
+        />
+      )}
+    </>
+  );
+}
+
+if (user && dashboardOpen) {
+  return (
+    <Dashboard
+      user={user}
+      onLogout={handleLogout}
+      initialSection={dashboardInitialSection}
+    />
+  );
+}
 
   return (
     <div className="app">
@@ -220,14 +245,21 @@ function App() {
 
         <nav className={menuOpen ? "nav nav-open" : "nav"}>
           {navItems.map(([label, link]) => (
-            <a
-              key={link}
-              href={link}
-              onClick={closeMenu}
-            >
-              {label}
-            </a>
-          ))}
+  <a
+    key={link}
+    href={link}
+    onClick={(event) => {
+      closeMenu();
+
+      if (label === "Academia") {
+        event.preventDefault();
+        setAcademyPageOpen(true);
+      }
+    }}
+  >
+    {label}
+  </a>
+))}
 
           <a
             href="#contacto"
