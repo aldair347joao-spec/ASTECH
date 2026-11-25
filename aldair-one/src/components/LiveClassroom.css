@@ -1642,3 +1642,235 @@
     padding: 2px 4px;
   }
 }
+
+/* ==========================================
+   CHAT ALDAIR ONE — MENSAGENS E ANEXOS
+========================================== */
+
+.ao-chat-live-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 7px;
+  color: #94a3b8;
+  font-size: 9px;
+}
+
+.ao-chat-live-status span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 8px rgba(34, 197, 94, .5);
+}
+
+.ao-chat-message-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ao-chat-message-heading time {
+  color: #64748b;
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.ao-chat-attachment {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 9px;
+  padding: 9px;
+  background: rgba(8, 17, 32, .65);
+  border: 1px solid rgba(96, 165, 250, .2);
+  border-radius: 9px;
+  min-width: 0;
+}
+
+.ao-chat-file-icon {
+  display: grid;
+  place-items: center;
+  width: 35px;
+  height: 35px;
+  flex: 0 0 35px;
+  color: #93c5fd;
+  background: rgba(37, 99, 235, .18);
+  border-radius: 8px;
+}
+
+.ao-chat-file-info {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  gap: 4px;
+}
+
+.ao-chat-file-info strong {
+  overflow-wrap: anywhere;
+  color: #e2e8f0;
+  font-size: 10px;
+}
+
+.ao-chat-file-info small {
+  color: #94a3b8;
+  font-size: 9px;
+}
+
+.ao-chat-download {
+  display: grid;
+  place-items: center;
+  width: 33px;
+  height: 33px;
+  flex: 0 0 33px;
+  color: #bfdbfe;
+  background: #1e3a5f;
+  border: 1px solid #31527c;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.ao-chat-download:disabled {
+  opacity: .45;
+  cursor: wait;
+}
+
+.ao-chat-file-input {
+  display: none !important;
+}
+
+.ao-chat-form {
+  align-items: center;
+}
+
+.ao-chat-attach-button {
+  display: grid;
+  place-items: center;
+  width: 39px;
+  height: 40px;
+  flex: 0 0 39px;
+  color: #bfdbfe;
+  background: #1d2a40;
+  border: 1px solid #334155;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.ao-chat-attach-button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.ao-chat-selected-file {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 12px 8px;
+  padding: 8px;
+  color: #bfdbfe;
+  background: rgba(37, 99, 235, .12);
+  border: 1px solid rgba(96, 165, 250, .2);
+  border-radius: 8px;
+  min-width: 0;
+}
+
+.ao-chat-selected-file > div {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  gap: 3px;
+}
+
+.ao-chat-selected-file strong {
+  overflow-wrap: anywhere;
+  font-size: 10px;
+}
+
+.ao-chat-selected-file small {
+  color: #94a3b8;
+  font-size: 9px;
+}
+
+.ao-chat-selected-file button {
+  display: grid;
+  place-items: center;
+  width: 27px;
+  height: 27px;
+  flex: 0 0 27px;
+  color: #cbd5e1;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.ao-chat-error,
+.ao-chat-status {
+  margin: 0 12px 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 10px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.ao-chat-error {
+  color: #fecaca;
+  background: rgba(185, 28, 28, .15);
+  border: 1px solid rgba(248, 113, 113, .25);
+}
+
+.ao-chat-status {
+  color: #bbf7d0;
+  background: rgba(22, 163, 74, .12);
+  border: 1px solid rgba(74, 222, 128, .2);
+}
+
+.ao-chat-send-spinner {
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgba(255, 255, 255, .35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: ao-chat-spin .7s linear infinite;
+}
+
+@keyframes ao-chat-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Chat em telemóveis */
+@media (max-width: 650px) {
+  .ao-chat-panel {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .ao-chat-messages {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .ao-chat-form {
+    flex: 0 0 auto;
+    gap: 5px;
+    padding: 8px;
+  }
+
+  .ao-chat-form input {
+    min-width: 0;
+    font-size: 12px;
+  }
+
+  .ao-chat-notice {
+    padding-bottom: 8px;
+  }
+}
