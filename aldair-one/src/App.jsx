@@ -111,7 +111,7 @@ function App() {
   const [dashboardOpen, setDashboardOpen] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
   const [serviceModalOpen, setServiceModalOpen] = useState(false);
-const [selectedService, setSelectedService] = useState("");
+  const [selectedService, setSelectedService] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -346,30 +346,22 @@ const [selectedService, setSelectedService] = useState("");
             </div>
           </div>
 
-          {/* ELEMENTO VISUAL DA MARCA */}
+          {/* VÍDEO DE APRESENTAÇÃO ALDAIR ONE */}
           <div className="hero-visual">
-            <div className="hero-glow" />
-            <div className="hero-orbit hero-orbit-one" />
-            <div className="hero-orbit hero-orbit-two" />
-
-            <div className="hero-brand-symbol">
-              <span>A</span>
-              <small>ALDAIR ONE</small>
-            </div>
-
-            <div className="hero-floating hero-floating-top">
-              <BrainCircuit size={19} />
-              <span>Inteligência Artificial</span>
-            </div>
-
-            <div className="hero-floating hero-floating-bottom">
-              <Code2 size={19} />
-              <span>Desenvolvimento</span>
-            </div>
-
-            <div className="hero-floating hero-floating-side">
-              <Workflow size={19} />
-              <span>Automação</span>
+            <div className="hero-video-frame">
+              <video
+                className="hero-presentation-video"
+                controls
+                playsInline
+                preload="metadata"
+                aria-label="Vídeo de apresentação da plataforma ALDAIR ONE"
+              >
+                <source
+                  src="/aldair-one-presentation.mp4"
+                  type="video/mp4"
+                />
+                O teu navegador não suporta a reprodução deste vídeo.
+              </video>
             </div>
           </div>
         </section>
@@ -480,18 +472,19 @@ const [selectedService, setSelectedService] = useState("");
 
                   <h3>{service.title}</h3>
                   <p>{service.description}</p>
-    <button
-  type="button"
-  className="service-request-link"
-  onClick={() => {
-    setSelectedService(service.title);
-    setServiceModalOpen(true);
-  }}
-  aria-label={`Solicitar ${service.title}`}
->
-  Solicitar serviço
-  <ArrowUpRight size={18} />
-</button>
+
+                  <button
+                    type="button"
+                    className="service-request-link"
+                    onClick={() => {
+                      setSelectedService(service.title);
+                      setServiceModalOpen(true);
+                    }}
+                    aria-label={`Solicitar ${service.title}`}
+                  >
+                    Solicitar serviço
+                    <ArrowUpRight size={18} />
+                  </button>
                 </article>
               );
             })}
@@ -667,12 +660,14 @@ const [selectedService, setSelectedService] = useState("");
           <ChevronRight size={16} />
         </a>
       </footer>
-  {serviceModalOpen && (
-  <ServiceRequestModal
-    service={selectedService}
-    onClose={() => setServiceModalOpen(false)}
-  />
-)}
+
+      {serviceModalOpen && (
+        <ServiceRequestModal
+          service={selectedService}
+          onClose={() => setServiceModalOpen(false)}
+        />
+      )}
+
       {/* AUTENTICAÇÃO */}
       {authOpen && (
         <AuthModal
