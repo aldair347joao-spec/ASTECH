@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from "react";
 import { Track, RoomEvent } from "livekit-client";
 
@@ -562,10 +561,12 @@ function LiveClassroom({ session, canManage }) {
   const [screenShareError, setScreenShareError] = useState("");
   const [screenShareLoading, setScreenShareLoading] = useState(false);
 
-  // Estado da funcionalidade de levantar a mão.
   const [handRaised, setHandRaised] = useState(false);
   const [raisedHands, setRaisedHands] = useState({});
   const [handError, setHandError] = useState("");
+
+  // Participante que está atualmente a falar.
+  const [activeSpeakerIdentity, setActiveSpeakerIdentity] = useState(null);
 
   const localName =
     localParticipant?.name ||
@@ -611,6 +612,10 @@ function LiveClassroom({ session, canManage }) {
         delete updated[participant.identity];
         return updated;
       });
+
+      setActiveSpeakerIdentity((current) =>
+        current === participant.identity ? null : current
+      );
     }
 
     room.on(RoomEvent.DataReceived, handleDataReceived);
@@ -629,6 +634,44 @@ function LiveClassroom({ session, canManage }) {
       );
     };
   }, [room]);
+
+  // Detetar automaticamente quem está a falar.
+  useEffect(() => {
+    function handleActiveSpeakersChanged(speakers) {
+      if (!Array.isArray(speakers) || speakers.length === 0) return;
+
+      const speaker = speakers[0];
+
+      if (speaker?.identity) {
+        setActiveSpeakerIdentity(speaker.identity);
+      }
+    }
+
+    room.on(
+      RoomEvent.ActiveSpeakersChanged,
+      handleActiveSpeakersChanged
+    );
+
+    return () => {
+      room.off(
+        RoomEvent.ActiveSpeakersChanged,
+        handleActiveSpeakersChanged
+      );
+    };
+  }, [room]);
+
+  // Corrigir a seleção se o participante sair da sala.
+  useEffect(() => {
+    if (
+      activeSpeakerIdentity &&
+      !participants.some(
+        (participant) =>
+          participant.identity === activeSpeakerIdentity
+      )
+    ) {
+      setActiveSpeakerIdentity(null);
+    }
+  }, [participants, activeSpeakerIdentity]);
 
   // Levantar ou baixar a mão.
   async function toggleHandRaised() {
@@ -717,35 +760,55 @@ function LiveClassroom({ session, canManage }) {
     Track.Source.ScreenShare
   ]);
 
+  // A partilha de ecrã tem sempre prioridade.
   const screenTrack = tracks.find(
-    (item) => item.source === Track.Source.ScreenShare
+    (item) =>
+      item.source === Track.Source.ScreenShare &&
+      !item.publication?.isMuted
   );
 
   const cameraTracks = tracks.filter(
     (item) => item.source === Track.Source.Camera
   );
 
-  // Dar prioridade às câmaras efetivamente ligadas.
   const activeCameraTracks = cameraTracks.filter(
     (item) =>
       !item.publication?.isMuted &&
       item.participant?.isCameraEnabled !== false
   );
 
+  // Encontrar quem está a falar.
+  const activeSpeaker = participants.find(
+    (participant) =>
+      participant.identity === activeSpeakerIdentity
+  );
+
+  // Se não houver orador ativo, dar prioridade à câmara local.
+  const fallbackParticipant =
+    participants.find(
+      (participant) => participant.isLocal
+    ) ||
+    participants[0] ||
+    null;
+
+  const mainParticipant =
+    screenTrack?.participant ||
+    activeSpeaker ||
+    fallbackParticipant;
+
+  // Encontrar a transmissão de vídeo do participante principal.
   const mainTrack =
     screenTrack ||
-    activeCameraTracks.find((item) => item.participant.isLocal) ||
-    activeCameraTracks[0] ||
-    cameraTracks.find((item) => item.participant.isLocal) ||
-    cameraTracks[0];
+    activeCameraTracks.find(
+      (item) =>
+        item.participant.identity === mainParticipant?.identity
+    ) ||
+    cameraTracks.find(
+      (item) =>
+        item.participant.identity === mainParticipant?.identity
+    );
 
-  // Mesmo sem qualquer câmara ligada, manter um participante
-  // no palco principal para apresentar o avatar.
-  const mainParticipant =
-    mainTrack?.participant ||
-    participants.find((participant) => participant.isLocal) ||
-    participants[0];
-
+  // Os restantes participantes aparecem na coluna lateral.
   const remainingParticipants = participants.filter(
     (participant) =>
       participant.identity !== mainParticipant?.identity
@@ -798,7 +861,9 @@ function LiveClassroom({ session, canManage }) {
               <h3>
                 {screenTrack
                   ? "Partilha de ecrã"
-                  : "Sessão em andamento"}
+                  : activeSpeaker
+                    ? `${activeSpeaker.name || activeSpeaker.identity} está a falar`
+                    : "Sessão em andamento"}
               </h3>
             </div>
 
@@ -810,89 +875,78 @@ function LiveClassroom({ session, canManage }) {
             </span>
           </div>
 
-          <div className="ao-video-stage">
-            {mainParticipant ? (
-              <ParticipantTile
-                participant={mainParticipant}
-                track={mainTrack}
-                featured
-                handRaised={Boolean(
-                  raisedHands[mainParticipant?.identity]
-                )}
-              />
-            ) : (
-              <div className="ao-stage-waiting">
-                <div className="ao-avatar-large">AO</div>
+          {/* PALCO PRINCIPAL + COLUNA LATERAL */}
+          <div className="ao-stage-layout">
+            <div className="ao-video-stage">
+              {mainParticipant ? (
+                <ParticipantTile
+                  participant={mainParticipant}
+                  track={mainTrack}
+                  featured
+                  handRaised={Boolean(
+                    raisedHands[mainParticipant.identity]
+                  )}
+                />
+              ) : (
+                <div className="ao-stage-waiting">
+                  <div className="ao-avatar-large">AO</div>
 
-                <h3>A aguardar participantes</h3>
+                  <h3>A aguardar participantes</h3>
 
-                <p>
-                  A imagem dos participantes aparecerá aqui
-                  quando estiverem disponíveis.
-                </p>
-              </div>
-            )}
-
-            {screenTrack && (
-              <div className="ao-screen-share-label">
-                <ScreenShare size={14} />
-                ECRÃ PARTILHADO
-              </div>
-            )}
-          </div>
-
-          <div className="ao-participants-section">
-            <div className="ao-participants-title">
-              <div>
-                <Users size={17} />
-                <strong>Na sala</strong>
-              </div>
-
-              <span>{participantCount} presentes</span>
-
-              {raisedHandsCount > 0 && (
-                <span className="ao-raised-hands-count">
-                  <Hand size={14} />
-                  {raisedHandsCount} a pedir a palavra
-                </span>
-              )}
-            </div>
-
-            <div className="ao-participants-strip">
-              {remainingParticipants.map((participant) => {
-                const cameraTrack = cameraTracks.find(
-                  (item) =>
-                    item.participant.identity === participant.identity
-                );
-
-                return (
-                  <ParticipantTile
-                    key={participant.identity}
-                    participant={participant}
-                    track={cameraTrack}
-                    handRaised={Boolean(
-                      raisedHands[participant.identity]
-                    )}
-                  />
-                );
-              })}
-
-              {participantCount === 0 && (
-                <div className="ao-strip-empty">
-                  Aguardando participantes.
+                  <p>
+                    A imagem dos participantes aparecerá aqui
+                    quando estiverem disponíveis.
+                  </p>
                 </div>
               )}
 
-              {mainParticipant && (
-                <div className="ao-local-presence">
-                  <span className="ao-local-presence-dot" />
-
-                  {mainParticipant.isLocal
-                    ? "A tua transmissão está em destaque"
-                    : "Transmissão em destaque"}
+              {screenTrack && (
+                <div className="ao-screen-share-label">
+                  <ScreenShare size={14} />
+                  ECRÃ PARTILHADO
                 </div>
               )}
             </div>
+
+            {remainingParticipants.length > 0 && (
+              <aside className="ao-participants-section">
+                <div className="ao-participants-title">
+                  <div>
+                    <Users size={17} />
+                    <strong>Na sala</strong>
+                  </div>
+
+                  <span>{remainingParticipants.length}</span>
+
+                  {raisedHandsCount > 0 && (
+                    <span className="ao-raised-hands-count">
+                      <Hand size={14} />
+                      {raisedHandsCount}
+                    </span>
+                  )}
+                </div>
+
+                <div className="ao-participants-strip">
+                  {remainingParticipants.map((participant) => {
+                    const cameraTrack = cameraTracks.find(
+                      (item) =>
+                        item.participant.identity === participant.identity
+                    );
+
+                    return (
+                      <ParticipantTile
+                        key={participant.identity}
+                        participant={participant}
+                        track={cameraTrack}
+                        handRaised={Boolean(
+                          raisedHands[participant.identity]
+                        )}
+                      />
+                    );
+                  })}
+                </div>
+              </aside>
+            )}
           </div>
 
           <div className="ao-classroom-controls">
