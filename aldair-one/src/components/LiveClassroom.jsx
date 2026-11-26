@@ -89,9 +89,18 @@ function ParticipantTile({
 
   const initial = name.charAt(0).toUpperCase();
 
+  const cameraUnavailable =
+    track?.source === Track.Source.Camera &&
+    (
+      track.publication?.isMuted ||
+      participant?.isCameraEnabled === false
+    );
+
+  const showVideo = Boolean(track) && !cameraUnavailable;
+
   return (
     <div className={`ao-video-tile ${featured ? "is-featured" : ""}`}>
-      {track ? (
+      {showVideo ? (
         <VideoTrack
           trackRef={track}
           className="ao-video-element"
@@ -716,12 +725,26 @@ function LiveClassroom({ session, canManage }) {
     (item) => item.source === Track.Source.Camera
   );
 
+  // Dar prioridade às câmaras efetivamente ligadas.
+  const activeCameraTracks = cameraTracks.filter(
+    (item) =>
+      !item.publication?.isMuted &&
+      item.participant?.isCameraEnabled !== false
+  );
+
   const mainTrack =
     screenTrack ||
+    activeCameraTracks.find((item) => item.participant.isLocal) ||
+    activeCameraTracks[0] ||
     cameraTracks.find((item) => item.participant.isLocal) ||
     cameraTracks[0];
 
-  const mainParticipant = mainTrack?.participant;
+  // Mesmo sem qualquer câmara ligada, manter um participante
+  // no palco principal para apresentar o avatar.
+  const mainParticipant =
+    mainTrack?.participant ||
+    participants.find((participant) => participant.isLocal) ||
+    participants[0];
 
   const remainingParticipants = participants.filter(
     (participant) =>
@@ -788,7 +811,7 @@ function LiveClassroom({ session, canManage }) {
           </div>
 
           <div className="ao-video-stage">
-            {mainTrack ? (
+            {mainParticipant ? (
               <ParticipantTile
                 participant={mainParticipant}
                 track={mainTrack}
@@ -799,15 +822,13 @@ function LiveClassroom({ session, canManage }) {
               />
             ) : (
               <div className="ao-stage-waiting">
-                <div className="ao-avatar-large">
-                  {localName.charAt(0).toUpperCase()}
-                </div>
+                <div className="ao-avatar-large">AO</div>
 
-                <h3>A preparar a transmissão</h3>
+                <h3>A aguardar participantes</h3>
 
                 <p>
-                  A imagem aparecerá aqui quando uma câmara
-                  ou partilha de ecrã estiver ativa.
+                  A imagem dos participantes aparecerá aqui
+                  quando estiverem disponíveis.
                 </p>
               </div>
             )}
@@ -856,9 +877,9 @@ function LiveClassroom({ session, canManage }) {
                 );
               })}
 
-              {!mainTrack && cameraTracks.length === 0 && (
+              {participantCount === 0 && (
                 <div className="ao-strip-empty">
-                  Aguardando vídeo dos participantes.
+                  Aguardando participantes.
                 </div>
               )}
 
