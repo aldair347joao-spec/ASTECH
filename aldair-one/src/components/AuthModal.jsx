@@ -4,7 +4,10 @@ import {
   X,
   ArrowRight,
   LockKeyhole,
-  UserRound
+  UserRound,
+  Mail,
+  ArrowLeft,
+  CheckCircle2
 } from "lucide-react";
 
 import { authAPI } from "../services/api";
@@ -12,25 +15,32 @@ import "./AuthModal.css";
 
 function AuthModal({ onClose, onAuthenticated }) {
   const [mode, setMode] = useState("login");
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const isRegister = mode === "register";
+  const isForgotPassword = mode === "forgot";
 
   function changeMode(nextMode) {
     setMode(nextMode);
     setError("");
+    setSuccess("");
     setPassword("");
     setConfirmPassword("");
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
+
     setError("");
+    setSuccess("");
 
     if (isRegister && password !== confirmPassword) {
       setError("As palavras-passe não coincidem.");
@@ -40,6 +50,19 @@ function AuthModal({ onClose, onAuthenticated }) {
     setLoading(true);
 
     try {
+      // RECUPERAÇÃO DA PALAVRA-PASSE
+      if (isForgotPassword) {
+        const response = await authAPI.forgotPassword(email);
+
+        setSuccess(
+          response.message ||
+          "Se existir uma conta associada a este email, receberás instruções para recuperar a palavra-passe."
+        );
+
+        return;
+      }
+
+      // LOGIN OU REGISTO
       let response;
 
       if (isRegister) {
@@ -63,6 +86,7 @@ function AuthModal({ onClose, onAuthenticated }) {
           response.message || "Não foi possível concluir a operação."
         );
       }
+
     } catch (err) {
       setError(err.message || "Ocorreu um erro inesperado.");
     } finally {
@@ -102,7 +126,9 @@ function AuthModal({ onClose, onAuthenticated }) {
 
         <div className="auth-heading">
           <div className="auth-icon">
-            {isRegister ? (
+            {isForgotPassword ? (
+              <Mail size={23} />
+            ) : isRegister ? (
               <UserRound size={23} />
             ) : (
               <LockKeyhole size={23} />
@@ -110,35 +136,41 @@ function AuthModal({ onClose, onAuthenticated }) {
           </div>
 
           <h2 id="auth-title">
-            {isRegister
-              ? "Criar a tua conta"
-              : "Bem-vindo de volta"}
+            {isForgotPassword
+              ? "Recuperar palavra-passe"
+              : isRegister
+                ? "Criar a tua conta"
+                : "Bem-vindo de volta"}
           </h2>
 
           <p>
-            {isRegister
-              ? "Junta-te ao ecossistema ALDAIR ONE."
-              : "Inicia sessão para aceder à tua área pessoal."}
+            {isForgotPassword
+              ? "Introduz o email associado à tua conta. Enviaremos instruções para recuperares o acesso."
+              : isRegister
+                ? "Junta-te ao ecossistema ALDAIR ONE."
+                : "Inicia sessão para aceder à tua área pessoal."}
           </p>
         </div>
 
-        <div className="auth-tabs">
-          <button
-            type="button"
-            className={!isRegister ? "active" : ""}
-            onClick={() => changeMode("login")}
-          >
-            Entrar
-          </button>
+        {!isForgotPassword && (
+          <div className="auth-tabs">
+            <button
+              type="button"
+              className={!isRegister ? "active" : ""}
+              onClick={() => changeMode("login")}
+            >
+              Entrar
+            </button>
 
-          <button
-            type="button"
-            className={isRegister ? "active" : ""}
-            onClick={() => changeMode("register")}
-          >
-            Criar conta
-          </button>
-        </div>
+            <button
+              type="button"
+              className={isRegister ? "active" : ""}
+              onClick={() => changeMode("register")}
+            >
+              Criar conta
+            </button>
+          </div>
+        )}
 
         <form className="auth-form" onSubmit={handleSubmit}>
           {isRegister && (
@@ -169,38 +201,42 @@ function AuthModal({ onClose, onAuthenticated }) {
             />
           </label>
 
-          <label>
-            Palavra-passe
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="Mínimo de 8 caracteres"
-              minLength={8}
-              maxLength={128}
-              autoComplete={
-                isRegister ? "new-password" : "current-password"
-              }
-              required
-            />
-          </label>
+          {!isForgotPassword && (
+            <>
+              <label>
+                Palavra-passe
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder="Mínimo de 8 caracteres"
+                  minLength={8}
+                  maxLength={128}
+                  autoComplete={
+                    isRegister ? "new-password" : "current-password"
+                  }
+                  required
+                />
+              </label>
 
-          {isRegister && (
-            <label>
-              Confirmar palavra-passe
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(event) =>
-                  setConfirmPassword(event.target.value)
-                }
-                placeholder="Repete a palavra-passe"
-                minLength={8}
-                maxLength={128}
-                autoComplete="new-password"
-                required
-              />
-            </label>
+              {isRegister && (
+                <label>
+                  Confirmar palavra-passe
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(event) =>
+                      setConfirmPassword(event.target.value)
+                    }
+                    placeholder="Repete a palavra-passe"
+                    minLength={8}
+                    maxLength={128}
+                    autoComplete="new-password"
+                    required
+                  />
+                </label>
+              )}
+            </>
           )}
 
           {error && (
@@ -209,20 +245,52 @@ function AuthModal({ onClose, onAuthenticated }) {
             </div>
           )}
 
-          <button
-            type="submit"
-            className="auth-submit"
-            disabled={loading}
-          >
-            {loading
-              ? "A processar..."
-              : isRegister
-                ? "Criar conta"
-                : "Entrar"}
+          {success && (
+            <div className="auth-success" role="status">
+              <CheckCircle2 size={19} />
+              <span>{success}</span>
+            </div>
+          )}
 
-            {!loading && <ArrowRight size={18} />}
-          </button>
+          {!success && (
+            <button
+              type="submit"
+              className="auth-submit"
+              disabled={loading}
+            >
+              {loading
+                ? "A processar..."
+                : isForgotPassword
+                  ? "Enviar instruções"
+                  : isRegister
+                    ? "Criar conta"
+                    : "Entrar"}
+
+              {!loading && <ArrowRight size={18} />}
+            </button>
+          )}
         </form>
+
+        {isForgotPassword ? (
+          <button
+            type="button"
+            className="auth-back-link"
+            onClick={() => changeMode("login")}
+          >
+            <ArrowLeft size={16} />
+            Voltar ao início de sessão
+          </button>
+        ) : (
+          !isRegister && (
+            <button
+              type="button"
+              className="auth-forgot-link"
+              onClick={() => changeMode("forgot")}
+            >
+              Esqueci-me da palavra-passe
+            </button>
+          )
+        )}
 
         <p className="auth-terms">
           ALDAIR ONE — One Platform. Multiple Solutions.
