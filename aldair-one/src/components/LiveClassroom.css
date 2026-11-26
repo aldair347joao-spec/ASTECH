@@ -1943,3 +1943,155 @@
     pointer-events: auto;
   }
 }
+
+/* ==========================================
+   ALDAIR ONE — GRELHA RESPONSIVA
+   Distribuição automática de participantes
+========================================== */
+
+/* Grelha principal dos participantes */
+.ao-participants-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 12px;
+  width: 100%;
+  min-height: 0;
+  max-height: 260px;
+  padding: 3px 2px 8px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Cada participante ocupa uma célula */
+.ao-participants-strip .ao-video-tile {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 110px;
+  height: 125px;
+  flex: initial;
+  border-radius: 12px;
+  transition:
+    border-color .2s ease,
+    transform .2s ease,
+    box-shadow .2s ease;
+}
+
+/* Vídeo ocupa toda a célula */
+.ao-participants-strip .ao-video-element,
+.ao-participants-strip .ao-video-tile video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+/* Avatar proporcional */
+.ao-participants-strip .ao-avatar-large {
+  width: 48px;
+  height: 48px;
+  font-size: 19px;
+}
+
+/* Identificação do participante */
+.ao-participants-strip .ao-video-name {
+  right: 6px;
+  bottom: 6px;
+  left: 6px;
+  max-width: calc(100% - 12px);
+  padding: 5px 7px;
+  font-size: 9px;
+}
+
+/* Indicador de quem está a falar */
+.ao-participants-strip .ao-video-tile:has(.ao-speaking-indicator) {
+  border: 2px solid #22c55e;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, .12);
+}
+
+/* Não ocupar uma célula com a indicação de destaque */
+.ao-participants-strip .ao-local-presence {
+  display: none;
+}
+
+/* Vazio */
+.ao-strip-empty {
+  grid-column: 1 / -1;
+  min-height: 55px;
+}
+
+/* Tablets e ecrãs médios */
+@media (max-width: 900px) {
+  .ao-participants-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 9px;
+    max-height: 240px;
+  }
+
+  .ao-participants-strip .ao-video-tile {
+    height: 112px;
+  }
+}
+
+/* Telemóveis na vertical */
+@media (max-width: 650px) and (orientation: portrait) {
+  .ao-participants-strip {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    min-height: 0;
+    max-height: 230px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 3px 1px 8px;
+  }
+
+  .ao-participants-strip .ao-video-tile {
+    width: 100%;
+    height: 105px;
+    min-height: 100px;
+    flex: initial;
+  }
+
+  .ao-participants-strip .ao-avatar-large {
+    width: 42px;
+    height: 42px;
+    font-size: 17px;
+  }
+}
+
+/* Telemóveis pequenos */
+@media (max-width: 380px) and (orientation: portrait) {
+  .ao-participants-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    max-height: 200px;
+  }
+
+  .ao-participants-strip .ao-video-tile {
+    height: 90px;
+    min-height: 90px;
+  }
+}
+
+/* Modo horizontal: faixa compacta para aproveitar a altura */
+@media (orientation: landscape) and (max-height: 500px) {
+  .ao-participants-strip {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    max-height: 48px;
+    min-height: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .ao-participants-strip .ao-video-tile {
+    flex: 0 0 76px;
+    width: 76px;
+    height: 43px;
+    min-height: 43px;
+  }
+}
