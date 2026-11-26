@@ -27,9 +27,7 @@ import {
   Paperclip,
   FileText,
   Download,
-  Hand,
-  Volume2,
-  VolumeX
+  Hand
 } from "lucide-react";
 
 import ParticipantRoster from "./ParticipantRoster";
@@ -560,12 +558,6 @@ function LiveClassroom({ session, canManage }) {
   const [raisedHands, setRaisedHands] = useState({});
   const [handError, setHandError] = useState("");
 
-  // Estado do viva-voz.
-  const [speakerphone, setSpeakerphone] = useState(false);
-  const [speakerphoneLoading, setSpeakerphoneLoading] = useState(false);
-  const [speakerphoneError, setSpeakerphoneError] = useState("");
-  const previousAudioOutput = useRef("default");
-
   const localName =
     localParticipant?.name ||
     localParticipant?.identity ||
@@ -672,71 +664,6 @@ function LiveClassroom({ session, canManage }) {
       setHandError(
         "Não foi possível enviar o sinal. Tenta novamente."
       );
-    }
-  }
-
-  // Alternar entre o viva-voz e a saída de áudio anterior.
-  async function toggleSpeakerphone() {
-    if (speakerphoneLoading) return;
-
-    setSpeakerphoneLoading(true);
-    setSpeakerphoneError("");
-
-    try {
-      await room.startAudio();
-
-      const audioElement = document.createElement("audio");
-
-      if (typeof audioElement.setSinkId !== "function") {
-        throw new Error(
-          "Este navegador não permite alternar a saída de áudio. Atualiza o Chrome ou utiliza os controlos de áudio do telemóvel."
-        );
-      }
-
-      if (!speakerphone) {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-
-        let speaker = devices.find(
-          (device) =>
-            device.kind === "audiooutput" &&
-            /speaker|alto.?falante|loudspeaker/i.test(device.label)
-        );
-
-        if (!speaker && navigator.mediaDevices.selectAudioOutput) {
-          speaker = await navigator.mediaDevices.selectAudioOutput();
-        }
-
-        if (!speaker?.deviceId) {
-          throw new Error(
-            "O navegador não disponibilizou uma saída de altifalante separada. Verifica as opções de áudio do Android."
-          );
-        }
-
-        previousAudioOutput.current =
-          room.getActiveDevice("audiooutput") || "default";
-
-        await room.switchActiveDevice(
-          "audiooutput",
-          speaker.deviceId
-        );
-
-        setSpeakerphone(true);
-      } else {
-        await room.switchActiveDevice(
-          "audiooutput",
-          previousAudioOutput.current || "default"
-        );
-
-        setSpeakerphone(false);
-      }
-    } catch (error) {
-      console.error("Erro ao alterar saída de áudio:", error);
-
-      setSpeakerphoneError(
-        error.message || "Não foi possível alterar a saída de áudio."
-      );
-    } finally {
-      setSpeakerphoneLoading(false);
     }
   }
 
@@ -1013,30 +940,6 @@ function LiveClassroom({ session, canManage }) {
               <button
                 type="button"
                 className={`ao-control-button ${
-                  speakerphone ? "is-active" : ""
-                }`}
-                onClick={toggleSpeakerphone}
-                disabled={speakerphoneLoading}
-                aria-pressed={speakerphone}
-              >
-                {speakerphone ? (
-                  <Volume2 size={19} />
-                ) : (
-                  <VolumeX size={19} />
-                )}
-
-                <span>
-                  {speakerphoneLoading
-                    ? "A mudar..."
-                    : speakerphone
-                      ? "Viva-voz ligado"
-                      : "Viva-voz"}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                className={`ao-control-button ${
                   handRaised ? "is-active" : ""
                 }`}
                 onClick={toggleHandRaised}
@@ -1078,12 +981,6 @@ function LiveClassroom({ session, canManage }) {
           {handError && (
             <div className="ao-hand-error" role="alert">
               {handError}
-            </div>
-          )}
-
-          {speakerphoneError && (
-            <div className="ao-audio-output-error" role="alert">
-              {speakerphoneError}
             </div>
           )}
 
