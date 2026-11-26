@@ -1943,20 +1943,3 @@
     pointer-events: auto;
   }
 }
-
-.ao-audio-output-error {
-  margin: 6px auto;
-  padding: 9px 12px;
-  color: #fde68a;
-  background: rgba(120, 53, 15, .25);
-  border: 1px solid rgba(245, 158, 11, .3);
-  border-radius: 9px;
-  font-size: 10px;
-  line-height: 1.5;
-  text-align: center;
-}
-
-.ao-control-button:disabled {
-  opacity: .65;
-  cursor: wait;
-}
