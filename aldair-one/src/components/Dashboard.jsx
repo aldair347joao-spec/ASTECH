@@ -25,9 +25,9 @@ import "./Dashboard.css";
 
 const SUPER_ADMIN_EMAIL = "aldair347joao@gmail.com";
 
-function Dashboard({ user, onLogout }) {
+function Dashboard({ user, onLogout, initialSection = "overview" }) {
   const [currentUser, setCurrentUser] = useState(user);
-  const [activeSection, setActiveSection] = useState("overview");
+  const [activeSection, setActiveSection] = useState(initialSection);
   const [menuOpen, setMenuOpen] = useState(false);
   const [setupKey, setSetupKey] = useState("");
   const [loading, setLoading] = useState(false);
