@@ -89,12 +89,13 @@ router.post("/register", authLimiter, async (req, res) => {
       });
     }
 
+    // Todas as novas contas públicas entram como Aluno.
     // Nunca aceitar permissões enviadas pelo cliente.
     const user = await User.create({
       name: cleanName,
       email: cleanEmail,
       password,
-      role: "user"
+      role: "student"
     });
 
     return res.status(201).json({
