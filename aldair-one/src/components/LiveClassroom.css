@@ -1874,3 +1874,47 @@
     padding-bottom: 8px;
   }
 }
+/* ==========================================
+   ALDAIR ONE — LEVANTAR A MÃO
+========================================== */
+
+.ao-hand-raised-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  color: #082f49;
+  background: #67e8f9;
+  border: 1px solid #a5f3fc;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 900;
+  box-shadow: 0 4px 15px rgba(34, 211, 238, .2);
+}
+
+.ao-raised-hands-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 9px;
+  color: #67e8f9 !important;
+  background: rgba(8, 145, 178, .12);
+  border: 1px solid rgba(34, 211, 238, .25);
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.ao-hand-error {
+  margin: 6px auto;
+  padding: 9px 13px;
+  color: #fecaca;
+  background: rgba(127, 29, 29, .3);
+  border: 1px solid rgba(239, 68, 68, .3);
+  border-radius: 9px;
+  font-size: 10px;
+  text-align: center;
+}
