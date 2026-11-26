@@ -2095,3 +2095,338 @@
     min-height: 43px;
   }
 }
+
+/* ==========================================
+   ALDAIR ONE — PALCO PRINCIPAL + COLUNA LATERAL
+   Layout profissional de videoconferência
+========================================== */
+
+.ao-stage-layout {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ao-stage-layout > .ao-video-stage {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+  min-height: 260px;
+  height: auto;
+  max-height: none;
+}
+
+.ao-stage-layout > .ao-participants-section {
+  display: flex;
+  flex: 0 0 clamp(135px, 23%, 235px);
+  flex-direction: column;
+  width: clamp(135px, 23%, 235px);
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 10px;
+  overflow: hidden;
+  background: #101c30;
+  border: 1px solid rgba(148, 163, 184, .15);
+  border-radius: 13px;
+}
+
+.ao-stage-layout .ao-participants-title {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.ao-stage-layout .ao-participants-title > div {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #e2e8f0;
+  font-size: 11px;
+}
+
+.ao-stage-layout .ao-participants-title > span {
+  font-size: 10px;
+}
+
+.ao-stage-layout .ao-participants-strip {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  max-height: none;
+  padding: 2px 4px 8px 1px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #334b70 transparent;
+}
+
+.ao-stage-layout .ao-participants-strip::-webkit-scrollbar {
+  width: 5px;
+}
+
+.ao-stage-layout .ao-participants-strip::-webkit-scrollbar-thumb {
+  background: #334b70;
+  border-radius: 10px;
+}
+
+.ao-stage-layout .ao-participants-strip .ao-video-tile {
+  display: flex;
+  flex: 0 0 auto;
+  width: 100%;
+  height: auto;
+  min-width: 0;
+  min-height: 105px;
+  aspect-ratio: 4 / 3;
+  border-radius: 10px;
+}
+
+.ao-stage-layout .ao-participants-strip .ao-video-element,
+.ao-stage-layout .ao-participants-strip .ao-video-tile video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ao-stage-layout .ao-participants-strip .ao-video-placeholder {
+  min-height: 0;
+  padding: 8px;
+}
+
+.ao-stage-layout .ao-participants-strip .ao-avatar-large {
+  width: 43px;
+  height: 43px;
+  font-size: 17px;
+}
+
+.ao-stage-layout .ao-participants-strip .ao-video-name {
+  right: 5px;
+  bottom: 5px;
+  left: 5px;
+  max-width: calc(100% - 10px);
+  padding: 5px 7px;
+  font-size: 9px;
+}
+
+.ao-stage-layout .ao-participants-strip .ao-speaking-indicator {
+  top: 5px;
+  left: 5px;
+  padding: 4px 6px;
+  font-size: 8px;
+}
+
+.ao-stage-layout .ao-participants-strip .ao-hand-raised-badge {
+  top: 5px;
+  right: 5px;
+  padding: 4px 6px;
+  font-size: 8px;
+}
+
+.ao-stage-layout .ao-local-presence,
+.ao-stage-layout .ao-strip-empty {
+  display: none !important;
+}
+
+/* TABLETS */
+@media (max-width: 900px) {
+  .ao-stage-layout {
+    gap: 9px;
+  }
+
+  .ao-stage-layout > .ao-participants-section {
+    flex-basis: 155px;
+    width: 155px;
+    padding: 8px;
+  }
+
+  .ao-stage-layout .ao-participants-strip .ao-video-tile {
+    min-height: 90px;
+  }
+}
+
+/* TELEMÓVEIS NA VERTICAL */
+@media (max-width: 650px) and (orientation: portrait) {
+  .ao-stage-layout {
+    flex: 1 1 0;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 6px;
+    min-height: 0;
+  }
+
+  .ao-stage-layout > .ao-video-stage {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+    min-height: 160px;
+    height: auto;
+    max-height: none;
+    border-radius: 9px;
+  }
+
+  .ao-stage-layout > .ao-participants-section {
+    flex: 0 0 clamp(88px, 27vw, 116px);
+    width: clamp(88px, 27vw, 116px);
+    min-height: 0;
+    padding: 6px 4px;
+    border-radius: 9px;
+  }
+
+  .ao-stage-layout .ao-participants-title {
+    justify-content: center;
+    margin-bottom: 6px;
+  }
+
+  .ao-stage-layout .ao-participants-title > div {
+    gap: 4px;
+    font-size: 9px;
+  }
+
+  .ao-stage-layout .ao-participants-title > span {
+    font-size: 9px;
+  }
+
+  .ao-stage-layout .ao-participants-strip {
+    gap: 7px;
+    padding-right: 2px;
+  }
+
+  .ao-stage-layout .ao-participants-strip .ao-video-tile {
+    flex: 0 0 auto;
+    width: 100%;
+    min-height: 65px;
+    aspect-ratio: 4 / 3;
+  }
+
+  .ao-stage-layout .ao-participants-strip .ao-avatar-large {
+    width: 32px;
+    height: 32px;
+    font-size: 13px;
+  }
+
+  .ao-stage-layout .ao-participants-strip .ao-video-placeholder {
+    gap: 4px;
+    font-size: 7px;
+  }
+
+  .ao-stage-layout .ao-participants-strip .ao-video-name {
+    right: 3px;
+    bottom: 3px;
+    left: 3px;
+    padding: 3px 4px;
+    font-size: 7px;
+  }
+
+  .ao-stage-layout .ao-participants-strip .ao-hand-raised-badge {
+    top: 3px;
+    right: 3px;
+    padding: 3px;
+    font-size: 7px;
+  }
+
+  .ao-stage-layout .ao-participants-strip .ao-speaking-indicator {
+    top: 3px;
+    left: 3px;
+    padding: 3px;
+    font-size: 7px;
+  }
+}
+
+/* TELEMÓVEIS PEQUENOS */
+@media (max-width: 380px) and (orientation: portrait) {
+  .ao-stage-layout {
+    gap: 5px;
+  }
+
+  .ao-stage-layout > .ao-participants-section {
+    flex-basis: 86px;
+    width: 86px;
+    padding: 5px 3px;
+  }
+
+  .ao-stage-layout .ao-participants-strip .ao-video-tile {
+    min-height: 58px;
+  }
+
+  .ao-stage-layout .ao-participants-title > div {
+    font-size: 8px;
+  }
+}
+
+/* TELEMÓVEL NA HORIZONTAL */
+@media (orientation: landscape) and (max-height: 500px) {
+  .ao-classroom-main {
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .ao-stage-layout {
+    flex: 1 1 0;
+    flex-direction: row;
+    gap: 7px;
+    min-height: 0;
+  }
+
+  .ao-stage-layout > .ao-video-stage {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 90px;
+    height: auto;
+  }
+
+  .ao-stage-layout > .ao-participants-section {
+    flex: 0 0 100px;
+    width: 100px;
+    min-height: 0;
+    padding: 5px;
+  }
+
+  .ao-stage-layout .ao-participants-title {
+    display: flex !important;
+    justify-content: center;
+    margin-bottom: 4px;
+  }
+
+  .ao-stage-layout .ao-participants-title > div {
+    font-size: 8px;
+  }
+
+  .ao-stage-layout .ao-participants-strip {
+    flex-direction: column;
+    gap: 5px;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .ao-stage-layout .ao-participants-strip .ao-video-tile {
+    flex: 0 0 auto;
+    width: 100%;
+    min-height: 48px;
+  }
+
+  .ao-stage-layout .ao-participants-strip .ao-video-name {
+    font-size: 7px;
+    padding: 3px;
+  }
+
+  .ao-stage-layout .ao-participants-strip .ao-avatar-large {
+    width: 25px;
+    height: 25px;
+    font-size: 11px;
+  }
+}
