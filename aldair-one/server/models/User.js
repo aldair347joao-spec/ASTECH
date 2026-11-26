@@ -59,6 +59,17 @@ const userSchema = new mongoose.Schema(
     adminVerifiedAt: {
       type: Date,
       default: null
+    },
+
+    // Recuperação da palavra-passe
+    passwordResetTokenHash: {
+      type: String,
+      select: false
+    },
+
+    passwordResetExpiresAt: {
+      type: Date,
+      select: false
     }
   },
   {
@@ -85,11 +96,14 @@ userSchema.set("toJSON", {
     delete ret.password;
     delete ret.adminVerificationCodeHash;
     delete ret.adminVerificationExpiresAt;
+    delete ret.passwordResetTokenHash;
+    delete ret.passwordResetExpiresAt;
+
     return ret;
   }
 });
 
-
+// Garantir que só existe um Super Administrador
 userSchema.index(
   { role: 1 },
   {
