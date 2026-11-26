@@ -32,6 +32,7 @@ function getTransporter() {
   return transporter;
 }
 
+// Email de verificação do Super Administrador
 export async function sendAdminVerificationEmail(email, code) {
   const mailer = getTransporter();
 
@@ -67,4 +68,98 @@ export async function sendAdminVerificationEmail(email, code) {
       </div>
     `
   });
+}
+
+// Email de recuperação da palavra-passe através do Resend
+export async function sendPasswordResetEmail(email, resetUrl) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const fromEmail = process.env.RESEND_FROM_EMAIL;
+
+  if (!apiKey || !fromEmail) {
+    throw new Error(
+      "Configuração do Resend incompleta."
+    );
+  }
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      from: `ALDAIR ONE <${fromEmail}>`,
+      to: [email],
+      subject: "Recuperação da palavra-passe — ALDAIR ONE",
+
+      text: [
+        "Recebemos um pedido para alterar a palavra-passe da tua conta ALDAIR ONE.",
+        "",
+        `Abre este link para definir uma nova palavra-passe: ${resetUrl}`,
+        "",
+        "Este link é válido durante 30 minutos e só pode ser utilizado uma vez.",
+        "Se não fizeste este pedido, ignora esta mensagem.",
+        "",
+        "ALDAIR ONE Security"
+      ].join("\n"),
+
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px;color:#172033;background:#ffffff">
+
+          <div style="padding:24px;border-radius:14px;background:#0b1426;color:#ffffff">
+            <h2 style="margin:0;color:#35baff">ALDAIR ONE</h2>
+            <p style="margin-bottom:0;color:#b9c9df">
+              One Platform. Multiple Solutions.
+            </p>
+          </div>
+
+          <h2 style="margin-top:30px">Recuperar palavra-passe</h2>
+
+          <p>
+            Recebemos um pedido para alterar a palavra-passe da tua conta.
+          </p>
+
+          <p>
+            Para criares uma nova palavra-passe, utiliza o botão abaixo:
+          </p>
+
+          <div style="margin:30px 0">
+            <a
+              href="${resetUrl}"
+              style="display:inline-block;padding:15px 25px;background:#168cff;color:#ffffff;text-decoration:none;border-radius:9px;font-weight:bold"
+            >
+              Criar nova palavra-passe
+            </a>
+          </div>
+
+          <p style="font-size:13px;color:#526174">
+            Este link expira em 30 minutos e só pode ser utilizado uma vez.
+          </p>
+
+          <p style="font-size:13px;color:#526174">
+            Se não fizeste este pedido, ignora esta mensagem.
+            A tua palavra-passe atual continuará válida.
+          </p>
+
+          <hr style="border:0;border-top:1px solid #e5eaf0;margin:28px 0" />
+
+          <small style="color:#718096">
+            ALDAIR ONE Security
+          </small>
+        </div>
+      `
+    })
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    console.error("Erro Resend:", data);
+
+    throw new Error(
+      data.message || "Não foi possível enviar o email de recuperação."
+    );
+  }
+
+  return data;
 }
