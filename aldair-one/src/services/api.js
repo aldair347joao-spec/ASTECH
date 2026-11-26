@@ -133,6 +133,17 @@ export const authAPI = {
     if (data.token) saveToken(data.token);
     return data;
   },
+    forgotPassword: (email) =>
+    apiRequest("/api/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify({ email })
+    }),
+
+  resetPassword: (token, password) =>
+    apiRequest("/api/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify({ token, password })
+    }),
 
   me: () => apiRequest("/api/auth/me"),
 
