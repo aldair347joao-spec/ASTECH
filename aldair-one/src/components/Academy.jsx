@@ -2180,7 +2180,9 @@ function Academy({ user, initialTab = "courses" }) {
           {/* AULAS ONLINE E VIDEOCONFERÊNCIA */}
           {activeTab === "sessions" && (
             <div className="academy-list">
-              {sessions.length === 0 ? (
+              {sessions.filter((session) =>
+  ["scheduled", "live"].includes(session.status)
+).length === 0 ? (
                 <div className="academy-empty">
                   <Video size={30} />
                   <strong>Nenhuma aula online agendada.</strong>
@@ -2189,7 +2191,11 @@ function Academy({ user, initialTab = "courses" }) {
                   </span>
                 </div>
               ) : (
-                sessions.map((session) => (
+                sessions
+  .filter((session) =>
+    ["scheduled", "live"].includes(session.status)
+  )
+  .map((session) => (
                   <article
                     className="academy-session-card"
                     key={session._id}
