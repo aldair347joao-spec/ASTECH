@@ -1,6 +1,6 @@
 
 import { useEffect, useRef, useState } from "react";
-import { Track } from "livekit-client";
+import { Track, RoomEvent } from "livekit-client";
 
 import {
   TrackToggle,
@@ -8,7 +8,8 @@ import {
   RoomAudioRenderer,
   useTracks,
   useParticipants,
-  useLocalParticipant
+  useLocalParticipant,
+  useRoomContext
 } from "@livekit/components-react";
 
 import {
@@ -25,7 +26,8 @@ import {
   ScreenShare,
   Paperclip,
   FileText,
-  Download
+  Download,
+  Hand
 } from "lucide-react";
 
 import ParticipantRoster from "./ParticipantRoster";
@@ -70,10 +72,15 @@ function readFileAsDataURL(file) {
   });
 }
 
+/* ==========================================
+   PARTICIPANTE / VÍDEO
+========================================== */
+
 function ParticipantTile({
   participant,
   track,
-  featured = false
+  featured = false,
+  handRaised = false
 }) {
   const name =
     participant?.name ||
@@ -104,6 +111,13 @@ function ParticipantTile({
       {participant?.isSpeaking && (
         <span className="ao-speaking-indicator">
           A falar
+        </span>
+      )}
+
+      {handRaised && (
+        <span className="ao-hand-raised-badge">
+          <Hand size={14} />
+          Mão levantada
         </span>
       )}
     </div>
@@ -140,20 +154,21 @@ function LiveChatPanel({ sessionId, onClose }) {
 
         if (response.success && Array.isArray(response.messages)) {
           setMessages((current) => {
-  const currentLast = current[current.length - 1];
-  const incomingLast = response.messages[
-    response.messages.length - 1
-  ];
+            const currentLast = current[current.length - 1];
 
-  if (
-    current.length === response.messages.length &&
-    currentLast?.id === incomingLast?.id
-  ) {
-    return current;
-  }
+            const incomingLast =
+              response.messages[response.messages.length - 1];
 
-  return response.messages;
-});
+            if (
+              current.length === response.messages.length &&
+              currentLast?.id === incomingLast?.id
+            ) {
+              return current;
+            }
+
+            return response.messages;
+          });
+
           setError("");
         }
       } catch (err) {
@@ -288,6 +303,7 @@ function LiveChatPanel({ sessionId, onClose }) {
       setError(
         err.message || "Não foi possível enviar a mensagem."
       );
+
       setStatus("");
     } finally {
       setSending(false);
@@ -522,6 +538,7 @@ function LiveChatPanel({ sessionId, onClose }) {
 ========================================== */
 
 function LiveClassroom({ session, canManage }) {
+  const room = useRoomContext();
   const participants = useParticipants();
 
   const {
@@ -536,6 +553,121 @@ function LiveClassroom({ session, canManage }) {
   const [screenShareError, setScreenShareError] = useState("");
   const [screenShareLoading, setScreenShareLoading] = useState(false);
 
+  // Estado da funcionalidade de levantar a mão.
+  const [handRaised, setHandRaised] = useState(false);
+  const [raisedHands, setRaisedHands] = useState({});
+  const [handError, setHandError] = useState("");
+
+  const localName =
+    localParticipant?.name ||
+    localParticipant?.identity ||
+    "Participante";
+
+  // Receber os sinais de mão levantada dos outros participantes.
+  useEffect(() => {
+    function handleDataReceived(payload, participant, kind, topic) {
+      if (topic !== "ao-hand-raise" || !participant) return;
+
+      try {
+        const data = JSON.parse(
+          new TextDecoder().decode(payload)
+        );
+
+        if (data.type !== "hand-raise") return;
+
+        setRaisedHands((current) => {
+          const updated = { ...current };
+
+          if (data.raised) {
+            updated[participant.identity] = {
+              name:
+                data.name ||
+                participant.name ||
+                participant.identity
+            };
+          } else {
+            delete updated[participant.identity];
+          }
+
+          return updated;
+        });
+      } catch (error) {
+        console.error("Erro ao receber sinal de mão:", error);
+      }
+    }
+
+    function handleParticipantDisconnected(participant) {
+      setRaisedHands((current) => {
+        const updated = { ...current };
+        delete updated[participant.identity];
+        return updated;
+      });
+    }
+
+    room.on(RoomEvent.DataReceived, handleDataReceived);
+
+    room.on(
+      RoomEvent.ParticipantDisconnected,
+      handleParticipantDisconnected
+    );
+
+    return () => {
+      room.off(RoomEvent.DataReceived, handleDataReceived);
+
+      room.off(
+        RoomEvent.ParticipantDisconnected,
+        handleParticipantDisconnected
+      );
+    };
+  }, [room]);
+
+  // Levantar ou baixar a mão.
+  async function toggleHandRaised() {
+    if (!localParticipant) return;
+
+    const nextState = !handRaised;
+
+    try {
+      setHandError("");
+
+      const payload = new TextEncoder().encode(
+        JSON.stringify({
+          type: "hand-raise",
+          raised: nextState,
+          name: localName
+        })
+      );
+
+      await localParticipant.publishData(payload, {
+        reliable: true,
+        topic: "ao-hand-raise"
+      });
+
+      setHandRaised(nextState);
+
+      setRaisedHands((current) => {
+        const updated = { ...current };
+
+        if (nextState) {
+          updated[localParticipant.identity] = {
+            name: localName
+          };
+        } else {
+          delete updated[localParticipant.identity];
+        }
+
+        return updated;
+      });
+    } catch (error) {
+      console.error("Erro ao alterar mão levantada:", error);
+
+      setHandError(
+        "Não foi possível enviar o sinal. Tenta novamente."
+      );
+    }
+  }
+
+  // Partilha de ecrã.
   async function handleScreenShare() {
     if (!localParticipant || screenShareLoading) return;
 
@@ -597,11 +729,7 @@ function LiveClassroom({ session, canManage }) {
   );
 
   const participantCount = participants.length;
-
-  const localName =
-    localParticipant?.name ||
-    localParticipant?.identity ||
-    "Participante";
+  const raisedHandsCount = Object.keys(raisedHands).length;
 
   return (
     <div className="ao-classroom">
@@ -665,6 +793,9 @@ function LiveClassroom({ session, canManage }) {
                 participant={mainParticipant}
                 track={mainTrack}
                 featured
+                handRaised={Boolean(
+                  raisedHands[mainParticipant?.identity]
+                )}
               />
             ) : (
               <div className="ao-stage-waiting">
@@ -697,6 +828,13 @@ function LiveClassroom({ session, canManage }) {
               </div>
 
               <span>{participantCount} presentes</span>
+
+              {raisedHandsCount > 0 && (
+                <span className="ao-raised-hands-count">
+                  <Hand size={14} />
+                  {raisedHandsCount} a pedir a palavra
+                </span>
+              )}
             </div>
 
             <div className="ao-participants-strip">
@@ -711,6 +849,9 @@ function LiveClassroom({ session, canManage }) {
                     key={participant.identity}
                     participant={participant}
                     track={cameraTrack}
+                    handRaised={Boolean(
+                      raisedHands[participant.identity]
+                    )}
                   />
                 );
               })}
@@ -799,6 +940,21 @@ function LiveClassroom({ session, canManage }) {
               <button
                 type="button"
                 className={`ao-control-button ${
+                  handRaised ? "is-active" : ""
+                }`}
+                onClick={toggleHandRaised}
+                aria-pressed={handRaised}
+              >
+                <Hand size={19} />
+
+                <span>
+                  {handRaised ? "Baixar mão" : "Levantar mão"}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                className={`ao-control-button ${
                   chatOpen ? "is-active" : ""
                 }`}
                 onClick={() => setChatOpen((value) => !value)}
@@ -821,6 +977,12 @@ function LiveClassroom({ session, canManage }) {
               </button>
             </div>
           </div>
+
+          {handError && (
+            <div className="ao-hand-error" role="alert">
+              {handError}
+            </div>
+          )}
 
           {screenShareError && (
             <div
