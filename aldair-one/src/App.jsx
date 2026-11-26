@@ -21,13 +21,15 @@ import {
   ChevronRight,
   LogIn,
   UserRound,
-  Sparkles,
   ExternalLink
 } from "lucide-react";
+
 import ServiceRequestModal from "./components/ServiceRequestModal";
 import AuthModal from "./components/AuthModal";
 import Dashboard from "./components/Dashboard";
 import AcademyLanding from "./components/AcademyLanding";
+import ResetPassword from "./components/ResetPassword";
+
 import { authAPI, getToken } from "./services/api";
 
 const services = [
@@ -115,8 +117,19 @@ function App() {
   const [selectedService, setSelectedService] = useState("");
   const [academyPageOpen, setAcademyPageOpen] = useState(false);
   const [academyAccessRequested, setAcademyAccessRequested] = useState(false);
-const [dashboardInitialSection, setDashboardInitialSection] = useState("overview");
+  const [dashboardInitialSection, setDashboardInitialSection] = useState("overview");
+
+  // Recuperação da palavra-passe:
+  // esta página é pública e não depende da sessão do utilizador.
+  const isResetPasswordPage =
+    window.location.pathname === "/reset-password";
+
   useEffect(() => {
+    if (isResetPasswordPage) {
+      setCheckingSession(false);
+      return;
+    }
+
     let active = true;
 
     async function restoreSession() {
@@ -148,7 +161,7 @@ const [dashboardInitialSection, setDashboardInitialSection] = useState("overview
     return () => {
       active = false;
     };
-  }, []);
+  }, [isResetPasswordPage]);
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -162,17 +175,17 @@ const [dashboardInitialSection, setDashboardInitialSection] = useState("overview
   ];
 
   function handleAuthenticated(authenticatedUser) {
-  setUser(authenticatedUser);
-  setAuthOpen(false);
-  setAcademyPageOpen(false);
+    setUser(authenticatedUser);
+    setAuthOpen(false);
+    setAcademyPageOpen(false);
 
-  setDashboardInitialSection(
-    academyAccessRequested ? "academy" : "overview"
-  );
+    setDashboardInitialSection(
+      academyAccessRequested ? "academy" : "overview"
+    );
 
-  setAcademyAccessRequested(false);
-  setDashboardOpen(true);
-}
+    setAcademyAccessRequested(false);
+    setDashboardOpen(true);
+  }
 
   function handleLogout() {
     authAPI.logout();
@@ -180,6 +193,11 @@ const [dashboardInitialSection, setDashboardInitialSection] = useState("overview
     setDashboardOpen(false);
     setAuthOpen(false);
     setMenuOpen(false);
+  }
+
+  // Página pública para definir uma nova palavra-passe.
+  if (isResetPasswordPage) {
+    return <ResetPassword />;
   }
 
   if (checkingSession) {
@@ -200,37 +218,38 @@ const [dashboardInitialSection, setDashboardInitialSection] = useState("overview
       </div>
     );
   }
- if (academyPageOpen && !user) {
-  return (
-    <>
-      <AcademyLanding
-        onBack={() => setAcademyPageOpen(false)}
-        onAccess={() => {
-  setAcademyAccessRequested(true);
-  setDashboardInitialSection("academy");
-  setAuthOpen(true);
-}}
-      />
 
-      {authOpen && (
-        <AuthModal
-          onClose={() => setAuthOpen(false)}
-          onAuthenticated={handleAuthenticated}
+  if (academyPageOpen && !user) {
+    return (
+      <>
+        <AcademyLanding
+          onBack={() => setAcademyPageOpen(false)}
+          onAccess={() => {
+            setAcademyAccessRequested(true);
+            setDashboardInitialSection("academy");
+            setAuthOpen(true);
+          }}
         />
-      )}
-    </>
-  );
-}
 
-if (user && dashboardOpen) {
-  return (
-    <Dashboard
-      user={user}
-      onLogout={handleLogout}
-      initialSection={dashboardInitialSection}
-    />
-  );
-}
+        {authOpen && (
+          <AuthModal
+            onClose={() => setAuthOpen(false)}
+            onAuthenticated={handleAuthenticated}
+          />
+        )}
+      </>
+    );
+  }
+
+  if (user && dashboardOpen) {
+    return (
+      <Dashboard
+        user={user}
+        onLogout={handleLogout}
+        initialSection={dashboardInitialSection}
+      />
+    );
+  }
 
   return (
     <div className="app">
@@ -252,28 +271,29 @@ if (user && dashboardOpen) {
 
         <nav className={menuOpen ? "nav nav-open" : "nav"}>
           {navItems.map(([label, link]) => (
-  <a
-    key={link}
-    href={link}
-    onClick={(event) => {
-      closeMenu();
- if (label === "Academia") {
-  event.preventDefault();
+            <a
+              key={link}
+              href={link}
+              onClick={(event) => {
+                closeMenu();
 
-  if (user) {
-    setAcademyPageOpen(false);
-    setDashboardInitialSection("academy");
-    setDashboardOpen(true);
-  } else {
-    setAcademyAccessRequested(false);
-    setAcademyPageOpen(true);
-  }
-}
-    }}
-  >
-    {label}
-  </a>
-))}
+                if (label === "Academia") {
+                  event.preventDefault();
+
+                  if (user) {
+                    setAcademyPageOpen(false);
+                    setDashboardInitialSection("academy");
+                    setDashboardOpen(true);
+                  } else {
+                    setAcademyAccessRequested(false);
+                    setAcademyPageOpen(true);
+                  }
+                }
+              }}
+            >
+              {label}
+            </a>
+          ))}
 
           <a
             href="#contacto"
@@ -291,12 +311,12 @@ if (user && dashboardOpen) {
               closeMenu();
 
               if (user) {
-  setDashboardInitialSection("overview");
-  setDashboardOpen(true);
-} else {
-  setAcademyAccessRequested(false);
-  setAuthOpen(true);
-}
+                setDashboardInitialSection("overview");
+                setDashboardOpen(true);
+              } else {
+                setAcademyAccessRequested(false);
+                setAuthOpen(true);
+              }
             }}
           >
             {user ? (
@@ -617,13 +637,13 @@ if (user && dashboardOpen) {
             </div>
 
             <button
-  type="button"
-  className="button button-primary"
-  onClick={() => setAcademyPageOpen(true)}
->
-  Conhecer a Academia
-  <ArrowRight size={18} />
-</button>
+              type="button"
+              className="button button-primary"
+              onClick={() => setAcademyPageOpen(true)}
+            >
+              Conhecer a Academia
+              <ArrowRight size={18} />
+            </button>
           </div>
 
           <div className="academy-decoration">ONE</div>
