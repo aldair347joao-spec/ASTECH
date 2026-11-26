@@ -114,6 +114,7 @@ function App() {
   const [serviceModalOpen, setServiceModalOpen] = useState(false);
   const [selectedService, setSelectedService] = useState("");
   const [academyPageOpen, setAcademyPageOpen] = useState(false);
+  const [academyAccessRequested, setAcademyAccessRequested] = useState(false);
 const [dashboardInitialSection, setDashboardInitialSection] = useState("overview");
   useEffect(() => {
     let active = true;
@@ -164,7 +165,12 @@ const [dashboardInitialSection, setDashboardInitialSection] = useState("overview
   setUser(authenticatedUser);
   setAuthOpen(false);
   setAcademyPageOpen(false);
-  setDashboardInitialSection("academy");
+
+  setDashboardInitialSection(
+    academyAccessRequested ? "academy" : "overview"
+  );
+
+  setAcademyAccessRequested(false);
   setDashboardOpen(true);
 }
 
@@ -200,9 +206,10 @@ const [dashboardInitialSection, setDashboardInitialSection] = useState("overview
       <AcademyLanding
         onBack={() => setAcademyPageOpen(false)}
         onAccess={() => {
-          setDashboardInitialSection("academy");
-          setAuthOpen(true);
-        }}
+  setAcademyAccessRequested(true);
+  setDashboardInitialSection("academy");
+  setAuthOpen(true);
+}}
       />
 
       {authOpen && (
@@ -250,11 +257,18 @@ if (user && dashboardOpen) {
     href={link}
     onClick={(event) => {
       closeMenu();
+ if (label === "Academia") {
+  event.preventDefault();
 
-      if (label === "Academia") {
-        event.preventDefault();
-        setAcademyPageOpen(true);
-      }
+  if (user) {
+    setAcademyPageOpen(false);
+    setDashboardInitialSection("academy");
+    setDashboardOpen(true);
+  } else {
+    setAcademyAccessRequested(false);
+    setAcademyPageOpen(true);
+  }
+}
     }}
   >
     {label}
@@ -277,10 +291,12 @@ if (user && dashboardOpen) {
               closeMenu();
 
               if (user) {
-                setDashboardOpen(true);
-              } else {
-                setAuthOpen(true);
-              }
+  setDashboardInitialSection("overview");
+  setDashboardOpen(true);
+} else {
+  setAcademyAccessRequested(false);
+  setAuthOpen(true);
+}
             }}
           >
             {user ? (
@@ -600,10 +616,14 @@ if (user && dashboardOpen) {
               </span>
             </div>
 
-            <a href="#contacto" className="button button-primary">
-              Conhecer a Academia
-              <ArrowRight size={18} />
-            </a>
+            <button
+  type="button"
+  className="button button-primary"
+  onClick={() => setAcademyPageOpen(true)}
+>
+  Conhecer a Academia
+  <ArrowRight size={18} />
+</button>
           </div>
 
           <div className="academy-decoration">ONE</div>
