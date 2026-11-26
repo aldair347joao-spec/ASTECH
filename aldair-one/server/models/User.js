@@ -38,7 +38,7 @@ const userSchema = new mongoose.Schema(
         "client",
         "user"
       ],
-      default: "user"
+      default: "student"
     },
 
     isActive: {
