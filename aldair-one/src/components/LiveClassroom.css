@@ -1918,3 +1918,28 @@
   font-size: 10px;
   text-align: center;
 }
+
+/* ALDAIR ONE — CORREÇÃO DA SOBREPOSIÇÃO DOS PARTICIPANTES */
+
+@media (max-width: 650px) and (orientation: portrait) {
+  /* Retira o botão flutuante de cima do vídeo */
+  .ao-roster-layer {
+    position: absolute !important;
+    top: auto !important;
+    right: 8px !important;
+    bottom: 65px !important;
+    left: auto !important;
+    z-index: 550;
+    pointer-events: none;
+  }
+
+  /* A lista abre através do botão inferior */
+  .ao-roster-layer .participant-roster-toggle {
+    display: none !important;
+  }
+
+  .ao-roster-layer .participant-roster-panel {
+    max-height: 45dvh !important;
+    pointer-events: auto;
+  }
+}
