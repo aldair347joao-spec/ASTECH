@@ -17,7 +17,7 @@ import {
   Globe,
   Layers3,
   ShieldCheck,
-  Zap,
+  WalletCards,
   ChevronRight,
   LogIn,
   UserRound,
@@ -70,7 +70,7 @@ const projects = [
     description:
       "Plataforma digital orientada para integrações de pagamentos e soluções financeiras.",
     status: "Em desenvolvimento",
-    icon: Zap,
+    icon: WalletCards,
     number: "01"
   },
   {
