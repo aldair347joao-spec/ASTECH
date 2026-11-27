@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   LayoutDashboard,
   UserRound,
@@ -25,7 +25,12 @@ import "./Dashboard.css";
 
 const SUPER_ADMIN_EMAIL = "aldair347joao@gmail.com";
 
-function Dashboard({ user, onLogout, initialSection = "overview" }) {
+function Dashboard({
+  user,
+  onLogout,
+  onExit,
+  initialSection = "overview"
+}) {
   const [currentUser, setCurrentUser] = useState(user);
   const [activeSection, setActiveSection] = useState(initialSection);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -33,6 +38,89 @@ function Dashboard({ user, onLogout, initialSection = "overview" }) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("");
+
+  // Histórico interno das secções visitadas.
+  const navigationStack = useRef([initialSection]);
+  const historyInitialized = useRef(false);
+  const onExitRef = useRef(onExit);
+
+  // Mantém a referência atual da função de saída.
+  useEffect(() => {
+    onExitRef.current = onExit;
+  }, [onExit]);
+
+  // Configura o botão Voltar do Android e do navegador.
+  useEffect(() => {
+    if (!historyInitialized.current) {
+      window.history.pushState(
+        { aldairDashboard: true },
+        "",
+        window.location.href
+      );
+
+      historyInitialized.current = true;
+    }
+
+    function handleBrowserBack() {
+      const stack = navigationStack.current;
+
+      // Se houver uma secção anterior, regressa a ela.
+      if (stack.length > 1) {
+        stack.pop();
+
+        const previousSection = stack[stack.length - 1];
+
+        setActiveSection(previousSection);
+        setMenuOpen(false);
+        setMessage("");
+
+        return;
+      }
+
+      // Na Visão geral, pergunta antes de sair.
+      const shouldExit = window.confirm(
+        "Pretendes sair da ALDAIR ONE?\n\n" +
+        "Seleciona OK para sair ou Cancelar para permanecer na plataforma."
+      );
+
+      if (shouldExit) {
+        onExitRef.current?.();
+      } else {
+        // Mantém o utilizador dentro da plataforma.
+        window.history.pushState(
+          { aldairDashboard: true },
+          "",
+          window.location.href
+        );
+      }
+    }
+
+    window.addEventListener("popstate", handleBrowserBack);
+
+    return () => {
+      window.removeEventListener("popstate", handleBrowserBack);
+    };
+  }, []);
+
+  // Navegação entre secções com histórico próprio.
+  function navigateSection(section) {
+    if (section === activeSection) {
+      setMenuOpen(false);
+      return;
+    }
+
+    navigationStack.current.push(section);
+
+    window.history.pushState(
+      { aldairDashboard: true, section },
+      "",
+      window.location.href
+    );
+
+    setActiveSection(section);
+    setMenuOpen(false);
+    setMessage("");
+  }
 
   const isSuperAdmin =
     currentUser?.role === "super_admin" &&
@@ -107,7 +195,7 @@ function Dashboard({ user, onLogout, initialSection = "overview" }) {
         "Ativação concluída. A tua conta é agora o Super Administrador do ALDAIR ONE."
       );
       setMessageType("success");
-      setActiveSection("overview");
+      navigateSection("overview");
     } catch (error) {
       setMessage(error.message);
       setMessageType("error");
@@ -434,7 +522,7 @@ function Dashboard({ user, onLogout, initialSection = "overview" }) {
                     return (
                       <button
                         key={section.id}
-                        onClick={() => setActiveSection(section.id)}
+                        onClick={() => navigateSection(section.id)}
                       >
                         <span className="dashboard-shortcut-icon">
                           <Icon size={22} />
@@ -501,11 +589,7 @@ function Dashboard({ user, onLogout, initialSection = "overview" }) {
                 className={
                   activeSection === section.id ? "active" : ""
                 }
-                onClick={() => {
-                  setActiveSection(section.id);
-                  setMenuOpen(false);
-                  setMessage("");
-                }}
+                onClick={() => navigateSection(section.id)}
               >
                 <Icon size={19} />
                 <span>{section.label}</span>
@@ -564,7 +648,7 @@ function Dashboard({ user, onLogout, initialSection = "overview" }) {
 
             <button
               className="dashboard-icon-button"
-              onClick={() => setActiveSection("security")}
+              onClick={() => navigateSection("security")}
               title="Definições"
               aria-label="Definições"
             >
