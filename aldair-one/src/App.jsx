@@ -1,5 +1,5 @@
-
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -108,23 +108,30 @@ const technologies = [
 ];
 
 function App() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [menuOpen, setMenuOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [user, setUser] = useState(null);
-  const [dashboardOpen, setDashboardOpen] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
   const [serviceModalOpen, setServiceModalOpen] = useState(false);
   const [selectedService, setSelectedService] = useState("");
-  const [academyPageOpen, setAcademyPageOpen] = useState(false);
   const [academyAccessRequested, setAcademyAccessRequested] = useState(false);
-  const [dashboardInitialSection, setDashboardInitialSection] = useState("overview");
-
-  // Controla a entrada e saída da página pública da Academia no histórico.
-  const academyHistoryRef = useRef(false);
 
   const isResetPasswordPage =
     window.location.pathname === "/reset-password";
 
+  const isAcademyPage = location.pathname === "/academy";
+
+  const dashboardMatch = location.pathname.match(
+    /^\/app\/([a-z-]+)\/?$/
+  );
+
+  const routeSection = dashboardMatch?.[1] || "overview";
+  const isDashboardPage = Boolean(dashboardMatch);
+
+  // Recupera a sessão existente.
   useEffect(() => {
     if (isResetPasswordPage) {
       setCheckingSession(false);
@@ -146,7 +153,10 @@ function App() {
 
         if (active && response.success && response.user) {
           setUser(response.user);
-          setDashboardOpen(true);
+
+          if (!isDashboardPage) {
+            navigate("/app/overview", { replace: true });
+          }
         }
       } catch (error) {
         authAPI.logout();
@@ -164,23 +174,22 @@ function App() {
     };
   }, [isResetPasswordPage]);
 
-  // Trata o botão Voltar do Android/navegador na página pública da Academia.
+  // Protege as rotas da área pessoal.
   useEffect(() => {
-    function handleAcademyBack() {
-      if (academyHistoryRef.current && academyPageOpen) {
-        academyHistoryRef.current = false;
-        setAcademyPageOpen(false);
-        setAuthOpen(false);
-        setMenuOpen(false);
-      }
+    if (!checkingSession && user && isAcademyPage) {
+      navigate("/app/academy", { replace: true });
     }
 
-    window.addEventListener("popstate", handleAcademyBack);
-
-    return () => {
-      window.removeEventListener("popstate", handleAcademyBack);
-    };
-  }, [academyPageOpen]);
+    if (!checkingSession && !user && isDashboardPage) {
+      navigate("/", { replace: true });
+    }
+  }, [
+    checkingSession,
+    user,
+    isAcademyPage,
+    isDashboardPage,
+    navigate
+  ]);
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -193,58 +202,45 @@ function App() {
     ["Contacto", "#contacto"]
   ];
 
-  // Abre a página da Academia e cria uma entrada no histórico.
   function openAcademyLanding() {
-    if (academyPageOpen) return;
-
-    window.history.pushState(
-      { aldairPublicAcademy: true },
-      "",
-      window.location.href
-    );
-
-    academyHistoryRef.current = true;
-    setAcademyPageOpen(true);
+    setAuthOpen(false);
+    setMenuOpen(false);
+    navigate("/academy");
   }
 
-  // Fecha a página da Academia através do histórico do navegador.
   function closeAcademyLanding() {
-    if (academyHistoryRef.current) {
-      window.history.back();
-    } else {
-      setAcademyPageOpen(false);
-    }
+    setAuthOpen(false);
+    navigate("/", { replace: true });
   }
 
   function handleAuthenticated(authenticatedUser) {
     setUser(authenticatedUser);
     setAuthOpen(false);
-    setAcademyPageOpen(false);
 
-    setDashboardInitialSection(
-      academyAccessRequested ? "academy" : "overview"
-    );
+    const nextSection = academyAccessRequested
+      ? "academy"
+      : "overview";
 
     setAcademyAccessRequested(false);
-    setDashboardOpen(true);
+
+    navigate(`/app/${nextSection}`, { replace: true });
   }
 
   function handleLogout() {
     authAPI.logout();
     setUser(null);
-    setDashboardOpen(false);
     setAuthOpen(false);
     setMenuOpen(false);
-    setAcademyPageOpen(false);
-    academyHistoryRef.current = false;
+    setAcademyAccessRequested(false);
+
+    navigate("/", { replace: true });
   }
 
-  // Voltar à página pública sem terminar a sessão.
+  // Sai da área pessoal sem terminar a sessão.
   function handleDashboardExit() {
-    setDashboardOpen(false);
     setMenuOpen(false);
-    setAcademyPageOpen(false);
     setAuthOpen(false);
+    navigate("/", { replace: true });
   }
 
   if (isResetPasswordPage) {
@@ -270,14 +266,14 @@ function App() {
     );
   }
 
-  if (academyPageOpen && !user) {
+  // Página pública de apresentação da Academia.
+  if (isAcademyPage && !user) {
     return (
       <>
         <AcademyLanding
           onBack={closeAcademyLanding}
           onAccess={() => {
             setAcademyAccessRequested(true);
-            setDashboardInitialSection("academy");
             setAuthOpen(true);
           }}
         />
@@ -292,13 +288,14 @@ function App() {
     );
   }
 
-  if (user && dashboardOpen) {
+  // Área pessoal.
+  if (isDashboardPage && user) {
     return (
       <Dashboard
         user={user}
         onLogout={handleLogout}
         onExit={handleDashboardExit}
-        initialSection={dashboardInitialSection}
+        initialSection={routeSection}
       />
     );
   }
@@ -333,9 +330,7 @@ function App() {
                   event.preventDefault();
 
                   if (user) {
-                    setAcademyPageOpen(false);
-                    setDashboardInitialSection("academy");
-                    setDashboardOpen(true);
+                    navigate("/app/academy");
                   } else {
                     setAcademyAccessRequested(false);
                     openAcademyLanding();
@@ -363,8 +358,7 @@ function App() {
               closeMenu();
 
               if (user) {
-                setDashboardInitialSection("overview");
-                setDashboardOpen(true);
+                navigate("/app/overview");
               } else {
                 setAcademyAccessRequested(false);
                 setAuthOpen(true);
@@ -385,7 +379,7 @@ function App() {
           </button>
         </nav>
 
-        {/* FOTOGRAFIA DE PERFIL NO CABEÇALHO */}
+        {/* FOTOGRAFIA DE PERFIL */}
         <a
           href="#sobre"
           className="header-profile"
