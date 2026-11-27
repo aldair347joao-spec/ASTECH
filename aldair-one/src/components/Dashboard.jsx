@@ -331,6 +331,56 @@ function Dashboard({ user, onLogout, initialSection = "overview" }) {
               </div>
             </div>
 
+            {/* VÍDEO DE INTRODUÇÃO DA ACADEMIA — APENAS ALUNOS */}
+            {currentUser?.role === "student" && (
+              <section className="academy-intro-card">
+                <div className="academy-intro-heading">
+                  <div>
+                    <span className="academy-intro-label">
+                      ALDAIR ONE ACADEMY
+                    </span>
+
+                    <h2>O teu caminho começa aqui.</h2>
+
+                    <p>
+                      Conhece a nossa Academia, descobre as oportunidades
+                      de aprendizagem e prepara-te para desenvolver novas
+                      competências.
+                    </p>
+                  </div>
+
+                  <div className="academy-intro-icon">
+                    <GraduationCap size={27} />
+                  </div>
+                </div>
+
+                <div className="academy-intro-video-frame">
+                  <video
+                    className="academy-intro-video"
+                    controls
+                    playsInline
+                    preload="metadata"
+                    aria-label="Vídeo de introdução à ALDAIR ONE Academy"
+                  >
+                    <source
+                      src="/academy-intro.mp4"
+                      type="video/mp4"
+                    />
+                    O teu navegador não suporta a reprodução deste vídeo.
+                  </video>
+                </div>
+
+                <div className="academy-intro-footer">
+                  <span>
+                    <Video size={16} />
+                    Apresentação da Academia
+                  </span>
+
+                  <span>Aprender. Evoluir. Conquistar.</span>
+                </div>
+              </section>
+            )}
+
             {isSuperAdmin && (
               <div className="dashboard-superadmin-banner">
                 <Crown size={22} />
