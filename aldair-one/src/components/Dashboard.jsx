@@ -1,5 +1,5 @@
-
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   UserRound,
@@ -31,67 +31,44 @@ function Dashboard({
   onExit,
   initialSection = "overview"
 }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const routeMatch = location.pathname.match(
+    /^\/app\/([a-z-]+)\/?$/
+  );
+
+  const routeSection = routeMatch?.[1] || initialSection;
+
   const [currentUser, setCurrentUser] = useState(user);
-  const [activeSection, setActiveSection] = useState(initialSection);
+  const [activeSection, setActiveSection] = useState(routeSection);
   const [menuOpen, setMenuOpen] = useState(false);
   const [setupKey, setSetupKey] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("");
 
-  // Histórico interno das secções visitadas.
-  const navigationStack = useRef([initialSection]);
-  const historyInitialized = useRef(false);
-  const onExitRef = useRef(onExit);
-
-  // Mantém a referência atual da função de saída.
+  // Sincroniza a secção apresentada com a rota atual.
   useEffect(() => {
-    onExitRef.current = onExit;
-  }, [onExit]);
+    setActiveSection(routeSection);
+    setMenuOpen(false);
+    setMessage("");
+  }, [routeSection]);
 
-  // Configura o botão Voltar do Android e do navegador.
+  // Confirma a saída quando o utilizador está na visão geral.
   useEffect(() => {
-    if (!historyInitialized.current) {
-      window.history.pushState(
-        { aldairDashboard: true },
-        "",
-        window.location.href
-      );
-
-      historyInitialized.current = true;
-    }
-
     function handleBrowserBack() {
-      const stack = navigationStack.current;
+      if (activeSection !== "overview") return;
 
-      // Se houver uma secção anterior, regressa a ela.
-      if (stack.length > 1) {
-        stack.pop();
-
-        const previousSection = stack[stack.length - 1];
-
-        setActiveSection(previousSection);
-        setMenuOpen(false);
-        setMessage("");
-
-        return;
-      }
-
-      // Na Visão geral, pergunta antes de sair.
       const shouldExit = window.confirm(
         "Pretendes sair da ALDAIR ONE?\n\n" +
         "Seleciona OK para sair ou Cancelar para permanecer na plataforma."
       );
 
       if (shouldExit) {
-        onExitRef.current?.();
+        onExit?.();
       } else {
-        // Mantém o utilizador dentro da plataforma.
-        window.history.pushState(
-          { aldairDashboard: true },
-          "",
-          window.location.href
-        );
+        navigate("/app/overview", { replace: true });
       }
     }
 
@@ -100,24 +77,16 @@ function Dashboard({
     return () => {
       window.removeEventListener("popstate", handleBrowserBack);
     };
-  }, []);
+  }, [activeSection, navigate, onExit]);
 
-  // Navegação entre secções com histórico próprio.
+  // Navegação entre secções através das rotas.
   function navigateSection(section) {
     if (section === activeSection) {
       setMenuOpen(false);
       return;
     }
 
-    navigationStack.current.push(section);
-
-    window.history.pushState(
-      { aldairDashboard: true, section },
-      "",
-      window.location.href
-    );
-
-    setActiveSection(section);
+    navigate(`/app/${section}`);
     setMenuOpen(false);
     setMessage("");
   }
@@ -195,6 +164,7 @@ function Dashboard({
         "Ativação concluída. A tua conta é agora o Super Administrador do ALDAIR ONE."
       );
       setMessageType("success");
+
       navigateSection("overview");
     } catch (error) {
       setMessage(error.message);
@@ -211,7 +181,9 @@ function Dashboard({
           return (
             <section className="dashboard-panel">
               <ShieldCheck size={34} />
+
               <h2>Acesso não autorizado</h2>
+
               <p className="dashboard-muted">
                 Não tens permissões para aceder ao painel administrativo.
               </p>
@@ -237,6 +209,7 @@ function Dashboard({
             <div className="dashboard-security">
               <div>
                 <ShieldCheck size={23} />
+
                 <span>
                   <strong>Email reservado</strong>
                   <small>{SUPER_ADMIN_EMAIL}</small>
@@ -350,6 +323,7 @@ function Dashboard({
         return (
           <section className="dashboard-panel">
             <BriefcaseBusiness size={32} />
+
             <h2>Serviços tecnológicos</h2>
 
             <p className="dashboard-muted">
@@ -369,6 +343,7 @@ function Dashboard({
         return (
           <section className="dashboard-panel">
             <ShieldCheck size={32} />
+
             <h2>Segurança da conta</h2>
 
             <p className="dashboard-muted">
@@ -378,6 +353,7 @@ function Dashboard({
             <div className="dashboard-security">
               <div>
                 <ShieldCheck size={22} />
+
                 <span>
                   <strong>Sessão autenticada</strong>
                   <small>A tua conta tem uma sessão activa.</small>
@@ -472,6 +448,7 @@ function Dashboard({
             {isSuperAdmin && (
               <div className="dashboard-superadmin-banner">
                 <Crown size={22} />
+
                 <div>
                   <strong>Super Administrador</strong>
                   <span>Conta principal do ALDAIR ONE.</span>
@@ -503,6 +480,7 @@ function Dashboard({
               <div className="dashboard-panel-heading">
                 <div>
                   <h2>Começa por aqui</h2>
+
                   <p className="dashboard-muted">
                     Explora as funcionalidades da plataforma.
                   </p>
