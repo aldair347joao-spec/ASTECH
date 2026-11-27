@@ -119,8 +119,6 @@ function App() {
   const [academyAccessRequested, setAcademyAccessRequested] = useState(false);
   const [dashboardInitialSection, setDashboardInitialSection] = useState("overview");
 
-  // Recuperação da palavra-passe:
-  // esta página é pública e não depende da sessão do utilizador.
   const isResetPasswordPage =
     window.location.pathname === "/reset-password";
 
@@ -195,7 +193,14 @@ function App() {
     setMenuOpen(false);
   }
 
-  // Página pública para definir uma nova palavra-passe.
+  // Voltar à página pública sem terminar a sessão.
+  function handleDashboardExit() {
+    setDashboardOpen(false);
+    setMenuOpen(false);
+    setAcademyPageOpen(false);
+    setAuthOpen(false);
+  }
+
   if (isResetPasswordPage) {
     return <ResetPassword />;
   }
@@ -246,6 +251,7 @@ function App() {
       <Dashboard
         user={user}
         onLogout={handleLogout}
+        onExit={handleDashboardExit}
         initialSection={dashboardInitialSection}
       />
     );
