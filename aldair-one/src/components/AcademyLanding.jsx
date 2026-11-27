@@ -10,8 +10,7 @@ import {
   ShieldCheck,
   MonitorPlay,
   CheckCircle2,
-  LogIn,
-  Sparkles
+  LogIn
 } from "lucide-react";
 
 import "./AcademyLanding.css";
@@ -82,9 +81,8 @@ function AcademyLanding({ onBack, onAccess }) {
         <section className="academy-landing-hero">
           <div className="academy-hero-content">
             <span className="academy-eyebrow">
-              <Sparkles size={15} />
-              APRENDIZAGEM · TECNOLOGIA · FUTURO
-            </span>
+  APRENDIZAGEM · TECNOLOGIA · FUTURO
+</span>
 
             <h1>
               Aprende hoje.
