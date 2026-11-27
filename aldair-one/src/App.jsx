@@ -745,7 +745,7 @@ function App() {
             </a>
 
             <a
-              href="https://www.linkedin.com/"
+              href="https://www.linkedin.com/in/aldair-joao-francisco-b06402445"
               target="_blank"
               rel="noreferrer"
               className="contact-item"
