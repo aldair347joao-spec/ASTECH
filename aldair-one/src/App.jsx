@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -119,6 +119,9 @@ function App() {
   const [academyAccessRequested, setAcademyAccessRequested] = useState(false);
   const [dashboardInitialSection, setDashboardInitialSection] = useState("overview");
 
+  // Controla a entrada e saída da página pública da Academia no histórico.
+  const academyHistoryRef = useRef(false);
+
   const isResetPasswordPage =
     window.location.pathname === "/reset-password";
 
@@ -161,6 +164,24 @@ function App() {
     };
   }, [isResetPasswordPage]);
 
+  // Trata o botão Voltar do Android/navegador na página pública da Academia.
+  useEffect(() => {
+    function handleAcademyBack() {
+      if (academyHistoryRef.current && academyPageOpen) {
+        academyHistoryRef.current = false;
+        setAcademyPageOpen(false);
+        setAuthOpen(false);
+        setMenuOpen(false);
+      }
+    }
+
+    window.addEventListener("popstate", handleAcademyBack);
+
+    return () => {
+      window.removeEventListener("popstate", handleAcademyBack);
+    };
+  }, [academyPageOpen]);
+
   const closeMenu = () => setMenuOpen(false);
 
   const navItems = [
@@ -171,6 +192,29 @@ function App() {
     ["Academia", "#academia"],
     ["Contacto", "#contacto"]
   ];
+
+  // Abre a página da Academia e cria uma entrada no histórico.
+  function openAcademyLanding() {
+    if (academyPageOpen) return;
+
+    window.history.pushState(
+      { aldairPublicAcademy: true },
+      "",
+      window.location.href
+    );
+
+    academyHistoryRef.current = true;
+    setAcademyPageOpen(true);
+  }
+
+  // Fecha a página da Academia através do histórico do navegador.
+  function closeAcademyLanding() {
+    if (academyHistoryRef.current) {
+      window.history.back();
+    } else {
+      setAcademyPageOpen(false);
+    }
+  }
 
   function handleAuthenticated(authenticatedUser) {
     setUser(authenticatedUser);
@@ -191,6 +235,8 @@ function App() {
     setDashboardOpen(false);
     setAuthOpen(false);
     setMenuOpen(false);
+    setAcademyPageOpen(false);
+    academyHistoryRef.current = false;
   }
 
   // Voltar à página pública sem terminar a sessão.
@@ -228,7 +274,7 @@ function App() {
     return (
       <>
         <AcademyLanding
-          onBack={() => setAcademyPageOpen(false)}
+          onBack={closeAcademyLanding}
           onAccess={() => {
             setAcademyAccessRequested(true);
             setDashboardInitialSection("academy");
@@ -292,7 +338,7 @@ function App() {
                     setDashboardOpen(true);
                   } else {
                     setAcademyAccessRequested(false);
-                    setAcademyPageOpen(true);
+                    openAcademyLanding();
                   }
                 }
               }}
@@ -645,7 +691,7 @@ function App() {
             <button
               type="button"
               className="button button-primary"
-              onClick={() => setAcademyPageOpen(true)}
+              onClick={openAcademyLanding}
             >
               Conhecer a Academia
               <ArrowRight size={18} />
