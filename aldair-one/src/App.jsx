@@ -17,7 +17,6 @@ import {
   Globe,
   Layers3,
   ShieldCheck,
-  WalletCards,
   ChevronRight,
   LogIn,
   UserRound,
@@ -70,7 +69,6 @@ const projects = [
     description:
       "Plataforma digital orientada para integrações de pagamentos e soluções financeiras.",
     status: "Em desenvolvimento",
-    icon: WalletCards,
     number: "01"
   },
   {
@@ -624,8 +622,16 @@ function App() {
                 <article className="project-card" key={project.name}>
                   <div className="project-card-top">
                     <div className="project-icon">
-                      <Icon size={27} />
-                    </div>
+  {project.name === "HONEY PAY" ? (
+    <img
+      src="/honey-pay-mark.png"
+      alt="Honey Pay"
+      className="honey-pay-project-logo"
+    />
+  ) : (
+    <Icon size={27} />
+  )}
+</div>
 
                     <span className="project-number">
                       {project.number}
