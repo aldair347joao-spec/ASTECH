@@ -348,12 +348,43 @@ router.post("/register/verify", otpLimiter, async (req, res) => {
     }
 
     if (!compareOtp(code, pending.otpHash)) {
-      pending.attempts += 1;
-      await pending.save();
+      const attemptUpdate = await PendingRegistration.updateOne(
+        {
+          _id: pending._id,
+          otpHash: pending.otpHash,
+          attempts: { $lt: MAX_ATTEMPTS },
+          expiresAt: { $gt: new Date() }
+        },
+        {
+          $inc: { attempts: 1 }
+        }
+      );
+
+      if (attemptUpdate.modifiedCount !== 1) {
+        return res.status(429).json({
+          success: false,
+          message: "O código expirou ou atingiste o limite de tentativas."
+        });
+      }
 
       return res.status(400).json({
         success: false,
         message: "Código incorreto."
+      });
+    }
+
+    // Consome o código atomicamente: só um pedido pode utilizá-lo.
+    const consumedPending = await PendingRegistration.findOneAndDelete({
+      _id: pending._id,
+      otpHash: pending.otpHash,
+      attempts: { $lt: MAX_ATTEMPTS },
+      expiresAt: { $gt: new Date() }
+    });
+
+    if (!consumedPending) {
+      return res.status(409).json({
+        success: false,
+        message: "Este código já foi utilizado ou expirou. Solicita um novo código."
       });
     }
 
@@ -362,8 +393,6 @@ router.post("/register/verify", otpLimiter, async (req, res) => {
     });
 
     if (existingUser) {
-      await PendingRegistration.deleteOne({ email: cleanEmail });
-
       return res.status(409).json({
         success: false,
         message: "Este email já está registado."
@@ -371,9 +400,9 @@ router.post("/register/verify", otpLimiter, async (req, res) => {
     }
 
     const user = new User({
-      name: pending.name,
-      email: pending.email,
-      password: pending.passwordHash,
+      name: consumedPending.name,
+      email: consumedPending.email,
+      password: consumedPending.passwordHash,
       role: "student"
     });
 
@@ -381,10 +410,6 @@ router.post("/register/verify", otpLimiter, async (req, res) => {
     user.$locals.passwordAlreadyHashed = true;
 
     await user.save();
-
-    await PendingRegistration.deleteOne({
-      email: cleanEmail
-    });
 
     return res.status(201).json({
       success: true,
@@ -464,7 +489,6 @@ router.post("/login", authLimiter, async (req, res) => {
       userId: user._id
     });
 
-    // Um desafio expirado não deve bloquear um novo início de sessão.
     if (existingChallenge && existingChallenge.expiresAt <= new Date()) {
       await LoginChallenge.deleteOne({
         _id: existingChallenge._id
@@ -661,6 +685,16 @@ router.post("/login/verify", otpLimiter, async (req, res) => {
       });
     }
 
+    if (
+      user.role === "super_admin" &&
+      user.email.toLowerCase() !== SUPER_ADMIN_EMAIL
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Esta conta não está autorizada."
+      });
+    }
+
     const challenge = await LoginChallenge.findOne({
       userId: user._id
     }).select("+otpHash");
@@ -680,8 +714,24 @@ router.post("/login/verify", otpLimiter, async (req, res) => {
     }
 
     if (!compareOtp(code, challenge.otpHash)) {
-      challenge.attempts += 1;
-      await challenge.save();
+      const attemptUpdate = await LoginChallenge.updateOne(
+        {
+          _id: challenge._id,
+          otpHash: challenge.otpHash,
+          attempts: { $lt: MAX_ATTEMPTS },
+          expiresAt: { $gt: new Date() }
+        },
+        {
+          $inc: { attempts: 1 }
+        }
+      );
+
+      if (attemptUpdate.modifiedCount !== 1) {
+        return res.status(429).json({
+          success: false,
+          message: "O código expirou ou atingiste o limite de tentativas."
+        });
+      }
 
       return res.status(400).json({
         success: false,
@@ -689,19 +739,20 @@ router.post("/login/verify", otpLimiter, async (req, res) => {
       });
     }
 
-    if (
-      user.role === "super_admin" &&
-      user.email.toLowerCase() !== SUPER_ADMIN_EMAIL
-    ) {
-      return res.status(403).json({
+    // Consome o desafio atomicamente: apenas um pedido pode iniciar sessão.
+    const consumedChallenge = await LoginChallenge.findOneAndDelete({
+      _id: challenge._id,
+      otpHash: challenge.otpHash,
+      attempts: { $lt: MAX_ATTEMPTS },
+      expiresAt: { $gt: new Date() }
+    });
+
+    if (!consumedChallenge) {
+      return res.status(409).json({
         success: false,
-        message: "Esta conta não está autorizada."
+        message: "Este código já foi utilizado ou expirou. Inicia sessão novamente."
       });
     }
-
-    await LoginChallenge.deleteOne({
-      _id: challenge._id
-    });
 
     return res.json({
       success: true,
