@@ -35,7 +35,6 @@ function getTransporter() {
 // Email de verificação do Super Administrador
 export async function sendAdminVerificationEmail(email, code) {
   const mailer = getTransporter();
-
   const from = process.env.SMTP_FROM || process.env.SMTP_USER;
 
   return mailer.sendMail({
@@ -68,6 +67,94 @@ export async function sendAdminVerificationEmail(email, code) {
       </div>
     `
   });
+}
+
+// Email de verificação de registo e início de sessão
+export async function sendRegistrationOtpEmail(email, code) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const fromEmail = process.env.RESEND_FROM_EMAIL;
+
+  if (!apiKey || !fromEmail) {
+    throw new Error("Configuração do Resend incompleta.");
+  }
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      from: `ALDAIR ONE <${fromEmail}>`,
+      to: [email],
+      subject: "Código de verificação — ALDAIR ONE",
+      text: [
+        "Foi solicitado um código de verificação para a tua conta ALDAIR ONE.",
+        "",
+        `O teu código de segurança é: ${code}`,
+        "",
+        "Este código é válido durante 10 minutos.",
+        "Não partilhes este código com ninguém.",
+        "Se não fizeste este pedido, ignora esta mensagem.",
+        "",
+        "ALDAIR ONE Security"
+      ].join("\n"),
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px;color:#172033;background:#ffffff">
+
+          <div style="padding:24px;border-radius:14px;background:#0b1426;color:#ffffff">
+            <h2 style="margin:0;color:#35baff">ALDAIR ONE</h2>
+            <p style="margin-bottom:0;color:#b9c9df">
+              One Platform. Multiple Solutions.
+            </p>
+          </div>
+
+          <h2 style="margin-top:30px">Verificação de segurança</h2>
+
+          <p>
+            Para continuar, introduz o código de segurança abaixo:
+          </p>
+
+          <div style="margin:28px 0;padding:22px;background:#eef4ff;border-radius:12px;text-align:center">
+            <div style="font-size:34px;font-weight:bold;letter-spacing:9px;color:#087cf0">
+              ${code}
+            </div>
+          </div>
+
+          <p>
+            Este código é válido durante <strong>10 minutos</strong>.
+          </p>
+
+          <p style="font-size:13px;color:#526174">
+            Nunca partilhes este código. A equipa ALDAIR ONE nunca te pedirá
+            que o reveles por telefone ou mensagem.
+          </p>
+
+          <p style="font-size:13px;color:#526174">
+            Se não fizeste este pedido, ignora esta mensagem.
+          </p>
+
+          <hr style="border:0;border-top:1px solid #e5eaf0;margin:28px 0" />
+
+          <small style="color:#718096">
+            ALDAIR ONE Security
+          </small>
+        </div>
+      `
+    })
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    console.error("Erro Resend OTP:", data);
+
+    throw new Error(
+      data.message || "Não foi possível enviar o código de verificação."
+    );
+  }
+
+  return data;
 }
 
 // Email de recuperação da palavra-passe através do Resend
