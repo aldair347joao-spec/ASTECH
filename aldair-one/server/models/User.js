@@ -87,11 +87,11 @@ const userSchema = new mongoose.Schema(
 userSchema.pre("save", async function () {
   if (!this.isModified("password")) return;
 
-  // A palavra-passe já foi protegida durante o registo pendente
-  if (this.passwordAlreadyHashed === true) {
-    this.passwordAlreadyHashed = false;
-    return;
-  }
+// A palavra-passe já foi protegida durante o registo pendente
+if (this.$locals.passwordAlreadyHashed === true) {
+  delete this.$locals.passwordAlreadyHashed;
+  return;
+}
 
   this.password = await bcrypt.hash(this.password, 12);
 });
