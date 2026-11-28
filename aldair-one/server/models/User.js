@@ -46,6 +46,12 @@ const userSchema = new mongoose.Schema(
       default: true
     },
 
+    // Versão da sessão: permite invalidar tokens anteriores
+    sessionVersion: {
+      type: Number,
+      default: 0
+    },
+
     adminVerificationCodeHash: {
       type: String,
       select: false
@@ -77,10 +83,11 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// Evitar encriptação duplicada da palavra-passe
+// Encriptar a palavra-passe antes de guardar
 userSchema.pre("save", async function () {
   if (!this.isModified("password")) return;
 
+  // A palavra-passe já foi protegida durante o registo pendente
   if (this.passwordAlreadyHashed === true) {
     this.passwordAlreadyHashed = false;
     return;
@@ -89,7 +96,7 @@ userSchema.pre("save", async function () {
   this.password = await bcrypt.hash(this.password, 12);
 });
 
-// Verificar palavra-passe no login
+// Verificar palavra-passe
 userSchema.methods.comparePassword = async function (
   candidatePassword
 ) {
