@@ -114,7 +114,10 @@ function AuthModal({ onClose, onAuthenticated }) {
             password
           });
 
-      if (response.success && response.requiresOtp) {
+      // IMPORTANTE:
+      // requiresOtp pode chegar mesmo com success:false,
+      // quando já existe um código pendente no servidor.
+      if (response.requiresOtp === true) {
         setOtpPurpose(isRegister ? "register" : "login");
         setOtpStage(true);
         setOtp("");
@@ -153,6 +156,15 @@ function AuthModal({ onClose, onAuthenticated }) {
       );
     } catch (err) {
       setError(err.message || "Não foi possível reenviar o código.");
+
+      // O servidor pode ter eliminado o desafio por expiração
+      // ou falha no envio. Nesse caso, permitir iniciar novamente.
+      if (err.status === 400 || err.status === 500) {
+        setOtpStage(false);
+        setOtp("");
+        setPassword("");
+        setConfirmPassword("");
+      }
     } finally {
       setResending(false);
     }
