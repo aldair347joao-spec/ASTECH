@@ -367,7 +367,7 @@ router.post("/register/verify", otpLimiter, async (req, res) => {
     });
 
     // A palavra-passe já está protegida com bcrypt.
-    user.passwordAlreadyHashed = true;
+    user.$locals.passwordAlreadyHashed = true;
 
     await user.save();
 
