@@ -157,8 +157,12 @@ function App() {
           }
         }
       } catch (error) {
-        authAPI.logout();
-      } finally {
+  try {
+    await authAPI.logout();
+  } catch (logoutError) {
+    console.warn("A sessão já não está válida:", logoutError.message);
+  }
+} finally {
         if (active) {
           setCheckingSession(false);
         }
