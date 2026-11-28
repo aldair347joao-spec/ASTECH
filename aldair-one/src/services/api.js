@@ -88,16 +88,32 @@ function buildQuery(filters = {}) {
 // ==========================================
 
 export const authAPI = {
-  register: async (userData) => {
-    const data = await apiRequest("/api/auth/register", {
+  // REGISTO — solicitar código OTP
+  register: (userData) =>
+    apiRequest("/api/auth/register", {
       method: "POST",
       body: JSON.stringify(userData)
+    }),
+
+  // REGISTO — confirmar código OTP
+  verifyRegistration: async (email, code) => {
+    const data = await apiRequest("/api/auth/register/verify", {
+      method: "POST",
+      body: JSON.stringify({ email, code })
     });
 
     if (data.token) saveToken(data.token);
     return data;
   },
 
+  // REGISTO — reenviar código
+  resendRegistrationCode: (email) =>
+    apiRequest("/api/auth/register/resend-code", {
+      method: "POST",
+      body: JSON.stringify({ email })
+    }),
+
+  // CONFIGURAÇÃO DO SUPER ADMINISTRADOR
   registerSuperAdmin: async (setupData) => {
     const data = await apiRequest(
       "/api/auth/setup/super-admin/register",
@@ -124,16 +140,33 @@ export const authAPI = {
     return data;
   },
 
-  login: async (credentials) => {
-    const data = await apiRequest("/api/auth/login", {
+  // LOGIN — validar credenciais e solicitar OTP
+  login: (credentials) =>
+    apiRequest("/api/auth/login", {
       method: "POST",
       body: JSON.stringify(credentials)
+    }),
+
+  // LOGIN — confirmar código OTP
+  verifyLogin: async (email, code) => {
+    const data = await apiRequest("/api/auth/login/verify", {
+      method: "POST",
+      body: JSON.stringify({ email, code })
     });
 
     if (data.token) saveToken(data.token);
     return data;
   },
-    forgotPassword: (email) =>
+
+  // LOGIN — reenviar código OTP
+  resendLoginCode: (email) =>
+    apiRequest("/api/auth/login/resend-code", {
+      method: "POST",
+      body: JSON.stringify({ email })
+    }),
+
+  // RECUPERAÇÃO DA PALAVRA-PASSE
+  forgotPassword: (email) =>
     apiRequest("/api/auth/forgot-password", {
       method: "POST",
       body: JSON.stringify({ email })
@@ -145,10 +178,20 @@ export const authAPI = {
       body: JSON.stringify({ token, password })
     }),
 
+  // UTILIZADOR AUTENTICADO
   me: () => apiRequest("/api/auth/me"),
 
-  logout: () => {
-    clearToken();
+  // TERMINAR SESSÃO NO SERVIDOR E NO NAVEGADOR
+  logout: async () => {
+    try {
+      if (getToken()) {
+        await apiRequest("/api/auth/logout", {
+          method: "POST"
+        });
+      }
+    } finally {
+      clearToken();
+    }
   }
 };
 
@@ -289,9 +332,7 @@ export const academyAPI = {
       `/api/academy/enrollments${buildQuery(filters)}`
     ),
 
-  // ==========================================
   // MATERIAIS, DOCUMENTOS E CERTIFICADOS
-  // ==========================================
 
   getClassMaterials: (classId) =>
     apiRequest(
@@ -320,7 +361,7 @@ export const academyAPI = {
       }
     ),
 
-  // OBTER COMPROVATIVO DE PAGAMENTO
+  // COMPROVATIVO DE PAGAMENTO
 
   getEnrollmentProof: (enrollmentId) =>
     apiRequest(
@@ -366,7 +407,6 @@ export const academyAPI = {
       `/api/academy/live-sessions${buildQuery(filters)}`
     ),
 
-  
   createLiveSession: (sessionData) =>
     apiRequest("/api/academy/live-sessions", {
       method: "POST",
@@ -389,7 +429,6 @@ export const academyAPI = {
         method: "DELETE"
       }
     )
-
 };
 
 // ==========================================
@@ -454,6 +493,10 @@ export const livekitAPI = {
       }
     )
 };
+
+// ==========================================
+// SERVIÇOS
+// ==========================================
 
 export const servicesAPI = {
   createRequest: (requestData) =>
