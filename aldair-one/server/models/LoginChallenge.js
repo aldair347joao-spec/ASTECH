@@ -47,11 +47,6 @@ loginChallengeSchema.index(
   { expireAfterSeconds: 0 }
 );
 
-loginChallengeSchema.index(
-  { userId: 1 },
-  { unique: true }
-);
-
 const LoginChallenge = mongoose.model(
   "LoginChallenge",
   loginChallengeSchema
