@@ -224,8 +224,12 @@ function App() {
     navigate(`/app/${nextSection}`, { replace: true });
   }
 
-  function handleLogout() {
-    authAPI.logout();
+  async function handleLogout() {
+  try {
+    await authAPI.logout();
+  } catch (error) {
+    console.error("Erro ao terminar sessão:", error);
+  } finally {
     setUser(null);
     setAuthOpen(false);
     setMenuOpen(false);
@@ -233,7 +237,7 @@ function App() {
 
     navigate("/", { replace: true });
   }
-
+}
   // Sai da área pessoal sem terminar a sessão.
   function handleDashboardExit() {
     setMenuOpen(false);
