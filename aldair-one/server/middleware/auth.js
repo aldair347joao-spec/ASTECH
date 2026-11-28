@@ -32,7 +32,17 @@ export async function authenticate(req, res, next) {
       });
     }
 
-    // Impedir que outra conta utilize o papel de Super Administrador.
+    // Rejeitar tokens antigos ou de outra versão de sessão.
+    if (
+      typeof decoded.sv !== "number" ||
+      decoded.sv !== (user.sessionVersion || 0)
+    ) {
+      return res.status(401).json({
+        success: false,
+        message: "A sessão terminou. Inicia sessão novamente."
+      });
+    }
+
     if (
       user.role === "super_admin" &&
       user.email.toLowerCase() !== SUPER_ADMIN_EMAIL
@@ -45,6 +55,7 @@ export async function authenticate(req, res, next) {
 
     req.user = user;
     next();
+
   } catch (error) {
     if (
       error.name === "JsonWebTokenError" ||
