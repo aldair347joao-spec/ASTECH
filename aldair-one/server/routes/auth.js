@@ -449,9 +449,15 @@ router.post("/login", authLimiter, async (req, res) => {
       });
     }
 
-    const existingChallenge = await LoginChallenge.findOne({
-      userId: user._id
-    });
+    let existingChallenge = await LoginChallenge.findOne({
+  userId: user._id
+});
+
+// Um desafio expirado não deve bloquear um novo início de sessão.
+if (existingChallenge && existingChallenge.expiresAt <= new Date()) {
+  await LoginChallenge.deleteOne({ _id: existingChallenge._id });
+  existingChallenge = null;
+}
 
     if (existingChallenge) {
       const elapsed = Date.now() - existingChallenge.lastSentAt.getTime();
