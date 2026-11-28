@@ -410,7 +410,7 @@ router.post("/register/verify", otpLimiter, async (req, res) => {
       otpHash: pending.otpHash,
       attempts: { $lt: MAX_ATTEMPTS },
       expiresAt: { $gt: new Date() }
-    });.select("+passwordHash");
+    }).select("+passwordHash");
 
     if (!consumedPending) {
       return res.status(409).json({
