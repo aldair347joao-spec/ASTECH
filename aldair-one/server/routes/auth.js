@@ -48,6 +48,10 @@ const passwordResetLimiter = rateLimit({
   }
 });
 
+// =====================================================
+// FUNÇÕES DE SEGURANÇA
+// =====================================================
+
 function getOtpSecret() {
   const secret = process.env.OTP_SECRET || process.env.JWT_SECRET;
 
@@ -237,6 +241,8 @@ router.post("/register", authLimiter, async (req, res) => {
 // =====================================================
 
 router.post("/register/resend-code", otpLimiter, async (req, res) => {
+  let cleanEmail;
+
   try {
     const { email } = req.body;
 
@@ -247,7 +253,7 @@ router.post("/register/resend-code", otpLimiter, async (req, res) => {
       });
     }
 
-    const cleanEmail = email.trim().toLowerCase();
+    cleanEmail = email.trim().toLowerCase();
 
     const pending = await PendingRegistration.findOne({
       email: cleanEmail
@@ -283,7 +289,6 @@ router.post("/register/resend-code", otpLimiter, async (req, res) => {
     pending.resendCount += 1;
 
     await pending.save();
-
     await sendOtp(cleanEmail, code);
 
     return res.json({
@@ -294,9 +299,15 @@ router.post("/register/resend-code", otpLimiter, async (req, res) => {
   } catch (error) {
     console.error("Erro ao reenviar OTP de registo:", error.message);
 
+    if (cleanEmail) {
+      await PendingRegistration.deleteOne({
+        email: cleanEmail
+      }).catch(() => {});
+    }
+
     return res.status(500).json({
       success: false,
-      message: "Não foi possível reenviar o código."
+      message: "Não foi possível reenviar o código. Começa novamente o registo."
     });
   }
 });
@@ -450,14 +461,17 @@ router.post("/login", authLimiter, async (req, res) => {
     }
 
     let existingChallenge = await LoginChallenge.findOne({
-  userId: user._id
-});
+      userId: user._id
+    });
 
-// Um desafio expirado não deve bloquear um novo início de sessão.
-if (existingChallenge && existingChallenge.expiresAt <= new Date()) {
-  await LoginChallenge.deleteOne({ _id: existingChallenge._id });
-  existingChallenge = null;
-}
+    // Um desafio expirado não deve bloquear um novo início de sessão.
+    if (existingChallenge && existingChallenge.expiresAt <= new Date()) {
+      await LoginChallenge.deleteOne({
+        _id: existingChallenge._id
+      });
+
+      existingChallenge = null;
+    }
 
     if (existingChallenge) {
       const elapsed = Date.now() - existingChallenge.lastSentAt.getTime();
@@ -500,7 +514,10 @@ if (existingChallenge && existingChallenge.expiresAt <= new Date()) {
     try {
       await sendOtp(cleanEmail, code);
     } catch (emailError) {
-      await LoginChallenge.deleteOne({ userId: user._id });
+      await LoginChallenge.deleteOne({
+        userId: user._id
+      });
+
       throw emailError;
     }
 
@@ -526,6 +543,8 @@ if (existingChallenge && existingChallenge.expiresAt <= new Date()) {
 // =====================================================
 
 router.post("/login/resend-code", otpLimiter, async (req, res) => {
+  let cleanEmail;
+
   try {
     const { email } = req.body;
 
@@ -536,7 +555,7 @@ router.post("/login/resend-code", otpLimiter, async (req, res) => {
       });
     }
 
-    const cleanEmail = email.trim().toLowerCase();
+    cleanEmail = email.trim().toLowerCase();
 
     const user = await User.findOne({
       email: cleanEmail,
@@ -594,9 +613,21 @@ router.post("/login/resend-code", otpLimiter, async (req, res) => {
   } catch (error) {
     console.error("Erro ao reenviar OTP de login:", error.message);
 
+    if (cleanEmail) {
+      const user = await User.findOne({
+        email: cleanEmail
+      }).catch(() => null);
+
+      if (user) {
+        await LoginChallenge.deleteOne({
+          userId: user._id
+        }).catch(() => {});
+      }
+    }
+
     return res.status(500).json({
       success: false,
-      message: "Não foi possível reenviar o código."
+      message: "Não foi possível reenviar o código. Inicia sessão novamente."
     });
   }
 });
