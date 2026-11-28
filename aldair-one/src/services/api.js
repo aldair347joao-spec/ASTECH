@@ -62,9 +62,14 @@ export async function apiRequest(path, options = {}) {
       clearToken();
     }
 
-    throw new Error(
+    const error = new Error(
       data.message || `Erro na comunicação (${response.status}).`
     );
+
+    error.status = response.status;
+    error.data = data;
+
+    throw error;
   }
 
   return data;
@@ -114,6 +119,7 @@ export const authAPI = {
     }),
 
   // CONFIGURAÇÃO DO SUPER ADMINISTRADOR
+  // Mantido por compatibilidade com eventuais referências antigas.
   registerSuperAdmin: async (setupData) => {
     const data = await apiRequest(
       "/api/auth/setup/super-admin/register",
@@ -141,11 +147,25 @@ export const authAPI = {
   },
 
   // LOGIN — validar credenciais e solicitar OTP
-  login: (credentials) =>
-    apiRequest("/api/auth/login", {
-      method: "POST",
-      body: JSON.stringify(credentials)
-    }),
+  login: async (credentials) => {
+    try {
+      return await apiRequest("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify(credentials)
+      });
+    } catch (error) {
+      // Se já existir um OTP pendente, permitir que o AuthModal
+      // abra novamente o ecrã de confirmação.
+      if (
+        error.status === 429 &&
+        error.data?.requiresOtp === true
+      ) {
+        return error.data;
+      }
+
+      throw error;
+    }
+  },
 
   // LOGIN — confirmar código OTP
   verifyLogin: async (email, code) => {
