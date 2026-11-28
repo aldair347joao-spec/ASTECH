@@ -61,7 +61,6 @@ const userSchema = new mongoose.Schema(
       default: null
     },
 
-    // Recuperação da palavra-passe
     passwordResetTokenHash: {
       type: String,
       select: false
@@ -78,19 +77,26 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// Encriptar a palavra-passe antes de guardar
+// Evitar encriptação duplicada da palavra-passe
 userSchema.pre("save", async function () {
   if (!this.isModified("password")) return;
+
+  if (this.passwordAlreadyHashed === true) {
+    this.passwordAlreadyHashed = false;
+    return;
+  }
 
   this.password = await bcrypt.hash(this.password, 12);
 });
 
-// Verificar a palavra-passe no login
-userSchema.methods.comparePassword = async function (candidatePassword) {
+// Verificar palavra-passe no login
+userSchema.methods.comparePassword = async function (
+  candidatePassword
+) {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-// Nunca devolver dados sensíveis nas respostas JSON
+// Remover dados sensíveis das respostas JSON
 userSchema.set("toJSON", {
   transform: function (doc, ret) {
     delete ret.password;
@@ -98,7 +104,6 @@ userSchema.set("toJSON", {
     delete ret.adminVerificationExpiresAt;
     delete ret.passwordResetTokenHash;
     delete ret.passwordResetExpiresAt;
-
     return ret;
   }
 });
