@@ -295,3 +295,67 @@
     font-size: 12px;
   }
 }
+
+/* VERIFICAÇÃO OTP */
+
+.auth-otp-email {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin: -8px 0 22px;
+  padding: 11px 14px;
+  border: 1px solid rgba(54, 186, 255, 0.2);
+  border-radius: 10px;
+  background: rgba(24, 140, 255, 0.07);
+  color: #8fd2ff;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.auth-otp-label {
+  text-align: center;
+}
+
+.auth-form input.auth-otp-input {
+  min-height: 62px;
+  text-align: center;
+  font-size: 29px;
+  font-weight: 800;
+  letter-spacing: 12px;
+  padding-left: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.auth-otp-hint {
+  color: #8294ad;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.auth-resend-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid rgba(54, 186, 255, 0.2);
+  border-radius: 10px;
+  background: rgba(24, 140, 255, 0.06);
+  color: #54baff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.auth-resend-link:hover:not(:disabled) {
+  background: rgba(24, 140, 255, 0.15);
+  color: #fff;
+}
+
+.auth-resend-link:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
