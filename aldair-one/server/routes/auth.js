@@ -241,8 +241,6 @@ router.post("/register", authLimiter, async (req, res) => {
 // =====================================================
 
 router.post("/register/resend-code", otpLimiter, async (req, res) => {
-  let cleanEmail;
-
   try {
     const { email } = req.body;
 
@@ -253,43 +251,83 @@ router.post("/register/resend-code", otpLimiter, async (req, res) => {
       });
     }
 
-    cleanEmail = email.trim().toLowerCase();
+    const cleanEmail = email.trim().toLowerCase();
+    const now = new Date();
+    const code = generateOtp();
+    const newOtpHash = hashOtp(code);
 
     const pending = await PendingRegistration.findOne({
       email: cleanEmail
     });
 
-    if (!pending || pending.expiresAt <= new Date()) {
+    if (!pending || pending.expiresAt <= now) {
       return res.status(400).json({
         success: false,
         message: "Registo não encontrado ou expirado. Começa novamente."
       });
     }
 
-    if (Date.now() - pending.lastSentAt.getTime() < RESEND_INTERVAL) {
+    const updatedPending = await PendingRegistration.findOneAndUpdate(
+      {
+        _id: pending._id,
+        expiresAt: { $gt: now },
+        lastSentAt: {
+          $lte: new Date(now.getTime() - RESEND_INTERVAL)
+        },
+        resendCount: { $lt: MAX_RESENDS }
+      },
+      {
+        $set: {
+          otpHash: newOtpHash,
+          expiresAt: new Date(now.getTime() + OTP_LIFETIME),
+          lastSentAt: now,
+          attempts: 0
+        },
+        $inc: {
+          resendCount: 1
+        }
+      },
+      {
+        new: true,
+        runValidators: true
+      }
+    );
+
+    if (!updatedPending) {
+      const currentPending = await PendingRegistration.findOne({
+        email: cleanEmail
+      });
+
+      if (!currentPending || currentPending.expiresAt <= new Date()) {
+        return res.status(400).json({
+          success: false,
+          message: "O pedido expirou. Começa novamente o registo."
+        });
+      }
+
+      if (currentPending.resendCount >= MAX_RESENDS) {
+        return res.status(429).json({
+          success: false,
+          message: "Atingiste o limite de reenvios."
+        });
+      }
+
       return res.status(429).json({
         success: false,
         message: "Aguarda 60 segundos antes de pedir outro código."
       });
     }
 
-    if (pending.resendCount >= MAX_RESENDS) {
-      return res.status(429).json({
-        success: false,
-        message: "Atingiste o limite de reenvios."
+    try {
+      await sendOtp(cleanEmail, code);
+    } catch (emailError) {
+      await PendingRegistration.deleteOne({
+        _id: updatedPending._id,
+        otpHash: newOtpHash
       });
+
+      throw emailError;
     }
-
-    const code = generateOtp();
-
-    pending.otpHash = hashOtp(code);
-    pending.expiresAt = new Date(Date.now() + OTP_LIFETIME);
-    pending.lastSentAt = new Date();
-    pending.attempts = 0;
-    pending.resendCount += 1;
-
-    await pending.save();
-    await sendOtp(cleanEmail, code);
 
     return res.json({
       success: true,
@@ -299,15 +337,9 @@ router.post("/register/resend-code", otpLimiter, async (req, res) => {
   } catch (error) {
     console.error("Erro ao reenviar OTP de registo:", error.message);
 
-    if (cleanEmail) {
-      await PendingRegistration.deleteOne({
-        email: cleanEmail
-      }).catch(() => {});
-    }
-
     return res.status(500).json({
       success: false,
-      message: "Não foi possível reenviar o código. Começa novamente o registo."
+      message: "Não foi possível reenviar o código. Tenta novamente."
     });
   }
 });
@@ -373,7 +405,6 @@ router.post("/register/verify", otpLimiter, async (req, res) => {
       });
     }
 
-    // Consome o código atomicamente: só um pedido pode utilizá-lo.
     const consumedPending = await PendingRegistration.findOneAndDelete({
       _id: pending._id,
       otpHash: pending.otpHash,
@@ -406,7 +437,6 @@ router.post("/register/verify", otpLimiter, async (req, res) => {
       role: "student"
     });
 
-    // A palavra-passe já está protegida com bcrypt.
     user.$locals.passwordAlreadyHashed = true;
 
     await user.save();
@@ -485,61 +515,111 @@ router.post("/login", authLimiter, async (req, res) => {
       });
     }
 
-    let existingChallenge = await LoginChallenge.findOne({
+    const now = new Date();
+    const code = generateOtp();
+    const newOtpHash = hashOtp(code);
+
+    let challenge = await LoginChallenge.findOne({
       userId: user._id
     });
 
-    if (existingChallenge && existingChallenge.expiresAt <= new Date()) {
+    if (challenge && challenge.expiresAt <= now) {
       await LoginChallenge.deleteOne({
-        _id: existingChallenge._id
+        _id: challenge._id,
+        expiresAt: { $lte: now }
       });
 
-      existingChallenge = null;
+      challenge = await LoginChallenge.findOne({
+        userId: user._id
+      });
     }
 
-    if (existingChallenge) {
-      const elapsed = Date.now() - existingChallenge.lastSentAt.getTime();
-
-      if (elapsed < RESEND_INTERVAL) {
-        return res.status(429).json({
-          success: false,
-          requiresOtp: true,
-          email: cleanEmail,
-          message: "Já enviámos um código. Aguarda 60 segundos antes de pedir outro."
-        });
-      }
-
-      if (existingChallenge.resendCount >= MAX_RESENDS) {
-        return res.status(429).json({
-          success: false,
-          message: "Atingiste o limite de reenvios. Tenta novamente mais tarde."
-        });
-      }
-    }
-
-    const code = generateOtp();
-
-    await LoginChallenge.findOneAndUpdate(
-      { userId: user._id },
-      {
-        $set: {
-          otpHash: hashOtp(code),
-          expiresAt: new Date(Date.now() + OTP_LIFETIME),
-          lastSentAt: new Date(),
-          attempts: 0
+    if (challenge) {
+      const updatedChallenge = await LoginChallenge.findOneAndUpdate(
+        {
+          _id: challenge._id,
+          expiresAt: { $gt: now },
+          lastSentAt: {
+            $lte: new Date(now.getTime() - RESEND_INTERVAL)
+          },
+          resendCount: { $lt: MAX_RESENDS }
         },
-        $inc: {
-          resendCount: 1
+        {
+          $set: {
+            otpHash: newOtpHash,
+            expiresAt: new Date(now.getTime() + OTP_LIFETIME),
+            lastSentAt: now,
+            attempts: 0
+          },
+          $inc: {
+            resendCount: 1
+          }
+        },
+        {
+          new: true,
+          runValidators: true
         }
-      },
-      { upsert: true, new: true }
-    );
+      );
+
+      if (!updatedChallenge) {
+        const currentChallenge = await LoginChallenge.findOne({
+          userId: user._id
+        });
+
+        if (currentChallenge && currentChallenge.expiresAt > new Date()) {
+          if (currentChallenge.resendCount >= MAX_RESENDS) {
+            return res.status(429).json({
+              success: false,
+              message: "Atingiste o limite de reenvios. Tenta novamente mais tarde."
+            });
+          }
+
+          return res.status(429).json({
+            success: false,
+            requiresOtp: true,
+            email: cleanEmail,
+            message: "Já existe um código ativo. Aguarda 60 segundos antes de pedir outro."
+          });
+        }
+
+        return res.status(409).json({
+          success: false,
+          message: "Não foi possível iniciar a verificação. Tenta novamente."
+        });
+      }
+
+      challenge = updatedChallenge;
+
+    } else {
+      try {
+        challenge = await LoginChallenge.create({
+          userId: user._id,
+          otpHash: newOtpHash,
+          expiresAt: new Date(now.getTime() + OTP_LIFETIME),
+          lastSentAt: now,
+          attempts: 0,
+          resendCount: 0
+        });
+      } catch (createError) {
+        if (createError.code === 11000) {
+          return res.status(429).json({
+            success: false,
+            requiresOtp: true,
+            email: cleanEmail,
+            message: "Já existe um pedido de verificação. Aguarda um momento."
+          });
+        }
+
+        throw createError;
+      }
+    }
 
     try {
       await sendOtp(cleanEmail, code);
     } catch (emailError) {
       await LoginChallenge.deleteOne({
-        userId: user._id
+        _id: challenge._id,
+        otpHash: newOtpHash
       });
 
       throw emailError;
@@ -567,8 +647,6 @@ router.post("/login", authLimiter, async (req, res) => {
 // =====================================================
 
 router.post("/login/resend-code", otpLimiter, async (req, res) => {
-  let cleanEmail;
-
   try {
     const { email } = req.body;
 
@@ -579,7 +657,7 @@ router.post("/login/resend-code", otpLimiter, async (req, res) => {
       });
     }
 
-    cleanEmail = email.trim().toLowerCase();
+    const cleanEmail = email.trim().toLowerCase();
 
     const user = await User.findOne({
       email: cleanEmail,
@@ -593,41 +671,83 @@ router.post("/login/resend-code", otpLimiter, async (req, res) => {
       });
     }
 
+    const now = new Date();
+
     const challenge = await LoginChallenge.findOne({
       userId: user._id
     });
 
-    if (!challenge || challenge.expiresAt <= new Date()) {
+    if (!challenge || challenge.expiresAt <= now) {
       return res.status(400).json({
         success: false,
         message: "O pedido expirou. Inicia sessão novamente."
       });
     }
 
-    if (Date.now() - challenge.lastSentAt.getTime() < RESEND_INTERVAL) {
+    const code = generateOtp();
+    const newOtpHash = hashOtp(code);
+
+    const updatedChallenge = await LoginChallenge.findOneAndUpdate(
+      {
+        _id: challenge._id,
+        expiresAt: { $gt: now },
+        lastSentAt: {
+          $lte: new Date(now.getTime() - RESEND_INTERVAL)
+        },
+        resendCount: { $lt: MAX_RESENDS }
+      },
+      {
+        $set: {
+          otpHash: newOtpHash,
+          expiresAt: new Date(now.getTime() + OTP_LIFETIME),
+          lastSentAt: now,
+          attempts: 0
+        },
+        $inc: {
+          resendCount: 1
+        }
+      },
+      {
+        new: true,
+        runValidators: true
+      }
+    );
+
+    if (!updatedChallenge) {
+      const currentChallenge = await LoginChallenge.findOne({
+        userId: user._id
+      });
+
+      if (!currentChallenge || currentChallenge.expiresAt <= new Date()) {
+        return res.status(400).json({
+          success: false,
+          message: "O pedido expirou. Inicia sessão novamente."
+        });
+      }
+
+      if (currentChallenge.resendCount >= MAX_RESENDS) {
+        return res.status(429).json({
+          success: false,
+          message: "Atingiste o limite de reenvios."
+        });
+      }
+
       return res.status(429).json({
         success: false,
         message: "Aguarda 60 segundos antes de pedir outro código."
       });
     }
 
-    if (challenge.resendCount >= MAX_RESENDS) {
-      return res.status(429).json({
-        success: false,
-        message: "Atingiste o limite de reenvios."
+    try {
+      await sendOtp(cleanEmail, code);
+    } catch (emailError) {
+      await LoginChallenge.deleteOne({
+        _id: updatedChallenge._id,
+        otpHash: newOtpHash
       });
+
+      throw emailError;
     }
-
-    const code = generateOtp();
-
-    challenge.otpHash = hashOtp(code);
-    challenge.expiresAt = new Date(Date.now() + OTP_LIFETIME);
-    challenge.lastSentAt = new Date();
-    challenge.attempts = 0;
-    challenge.resendCount += 1;
-
-    await challenge.save();
-    await sendOtp(cleanEmail, code);
 
     return res.json({
       success: true,
@@ -636,18 +756,6 @@ router.post("/login/resend-code", otpLimiter, async (req, res) => {
 
   } catch (error) {
     console.error("Erro ao reenviar OTP de login:", error.message);
-
-    if (cleanEmail) {
-      const user = await User.findOne({
-        email: cleanEmail
-      }).catch(() => null);
-
-      if (user) {
-        await LoginChallenge.deleteOne({
-          userId: user._id
-        }).catch(() => {});
-      }
-    }
 
     return res.status(500).json({
       success: false,
@@ -739,7 +847,6 @@ router.post("/login/verify", otpLimiter, async (req, res) => {
       });
     }
 
-    // Consome o desafio atomicamente: apenas um pedido pode iniciar sessão.
     const consumedChallenge = await LoginChallenge.findOneAndDelete({
       _id: challenge._id,
       otpHash: challenge.otpHash,
@@ -920,8 +1027,6 @@ router.post("/reset-password", passwordResetLimiter, async (req, res) => {
     user.password = password;
     user.passwordResetTokenHash = undefined;
     user.passwordResetExpiresAt = undefined;
-
-    // Invalidar todas as sessões anteriores após mudar a palavra-passe.
     user.sessionVersion = (user.sessionVersion || 0) + 1;
 
     await user.save();
